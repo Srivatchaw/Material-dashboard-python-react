@@ -1,7 +1,6 @@
-# my_backend_app/models.py
 from flask_sqlalchemy import SQLAlchemy
 from passlib.hash import pbkdf2_sha256
-from datetime import datetime, date # Import date as well
+from datetime import datetime, date
 
 db = SQLAlchemy()
 
@@ -31,27 +30,52 @@ class LoginHistory(db.Model):
     def __repr__(self):
         return f'<LoginHistory User:{self.user_id} Time:{self.login_time}>'
 
-# --- UPDATED ITEM MODEL ---
+# --- UPDATED ITEM MODEL (Date and Status made nullable=True) ---
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # Core Project/Item details
-    project_name = db.Column(db.String(100), nullable=False) # Renamed from 'name'
-    form_name = db.Column(db.String(100), nullable=False) # New field
+    project_name = db.Column(db.String(100), nullable=False)
+    form_name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     
-    # Date fields
-    start_date = db.Column(db.Date, nullable=False, default=date.today()) # New field, store only date. Use date.today()
-    expected_completion_date = db.Column(db.Date, nullable=False) # New field
-    actual_completion_date = db.Column(db.Date, nullable=True) # New field (can be null)
+    # Date fields - Made nullable=True
+    start_date = db.Column(db.Date, nullable=True) # <--- Changed to nullable=True
+    expected_completion_date = db.Column(db.Date, nullable=True) # <--- Changed to nullable=True
+    actual_completion_date = db.Column(db.Date, nullable=True)
     
-    # Status and Reason
-    status = db.Column(db.String(50), nullable=False, default='Pending') # Made nullable=False
-    reason_for_delay = db.Column(db.Text, nullable=True) # New field
+    # Status and Reason - Status made nullable=True
+    status = db.Column(db.String(50), nullable=True, default='Pending') # <--- Changed to nullable=True
+    reason_for_delay = db.Column(db.Text, nullable=True)
 
-    # Automatically set on creation
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow) 
+    # NEW FIELDS (from previous steps)
+    customer = db.Column(db.String(100), nullable=False)
+    public_ip = db.Column(db.String(45), nullable=True)
+    private_ip = db.Column(db.String(45), nullable=True)
+    os_type = db.Column(db.String(50), nullable=True)
+    root_username = db.Column(db.String(50), nullable=True)
+    root_password = db.Column(db.String(100), nullable=True)
+    server_username = db.Column(db.String(50), nullable=True)
+    server_password = db.Column(db.String(100), nullable=True)
+    server_name = db.Column(db.String(100), nullable=False)
+    core = db.Column(db.Integer, nullable=True)
+    ram = db.Column(db.String(50), nullable=True)
+    hdd = db.Column(db.String(50), nullable=True)
+    ports = db.Column(db.String(255), nullable=True)
+    location = db.Column(db.String(100), nullable=True)
+    applications = db.Column(db.Text, nullable=True)
+    db_name = db.Column(db.String(100), nullable=True)
+    db_password = db.Column(db.String(100), nullable=True)
+    db_port = db.Column(db.Integer, nullable=True)
+    dump_location = db.Column(db.String(255), nullable=True)
+    crontab_config = db.Column(db.Text, nullable=True)
+    backup_location = db.Column(db.String(255), nullable=True)
+    url = db.Column(db.String(255), nullable=True)
+    login_name = db.Column(db.String(50), nullable=True)
+    login_password = db.Column(db.String(100), nullable=True)
+
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def __repr__(self):
         return f'<Item {self.project_name}>'

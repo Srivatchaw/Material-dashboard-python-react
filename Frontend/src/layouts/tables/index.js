@@ -1,3 +1,5 @@
+// src/layouts/tables/index.js
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -6,7 +8,7 @@ import axios from "axios";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Icon from "@mui/material/Icon";
-import Dialog from "@mui/material/Dialog"; // For delete confirmation
+import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
@@ -33,8 +35,8 @@ function Tables() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarColor, setSnackbarColor] = useState("error");
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // State for delete dialog
-  const [itemToDelete, setItemToDelete] = useState(null); // State to store item to be deleted
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const openSnackbar = (message, color) => {
     setSnackbarMessage(message);
@@ -47,7 +49,7 @@ function Tables() {
   const fetchItems = async () => {
     if (!user || !user.user_id) {
       openSnackbar("User not authenticated. Please sign in.", "error");
-      navigate("/authentication/sign-in"); // Redirect if not authenticated
+      navigate("/authentication/sign-in");
       return;
     }
     try {
@@ -122,101 +124,171 @@ function Tables() {
           <Icon>add</Icon>&nbsp;Add Item
         </MDButton>
       </MDBox>
-      <MDBox pt={3}>
+      <MDBox pt={3} sx={{ overflowX: "auto" }}>
+        {" "}
+        {/* Added overflowX for horizontal scrolling */}
         {items.length === 0 ? (
           <MDTypography variant="body2" color="text" textAlign="center" p={2}>
             No items found. Click &quot;Add Item&quot; to create one.
           </MDTypography>
         ) : (
-          <MDBox sx={{ "& .MuiTableRow-root:not(:last-child)": { "& td": { borderBottom: 0 } } }}>
-            <MDBox component="table" width="100%">
-              <thead>
-                <MDBox component="tr" bgColor="light" textAlign="left">
-                  <MDBox component="th" py={1.5} px={3}>
-                    <MDTypography variant="overline" fontWeight="bold">
-                      Project Name
-                    </MDTypography>{" "}
-                    {/* Changed from Name */}
-                  </MDBox>
-                  <MDBox component="th" py={1.5} px={3}>
-                    <MDTypography variant="overline" fontWeight="bold">
-                      Form Name
-                    </MDTypography>{" "}
-                    {/* NEW FIELD */}
-                  </MDBox>
-                  <MDBox component="th" py={1.5} px={3}>
-                    <MDTypography variant="overline" fontWeight="bold">
-                      Start Date
-                    </MDTypography>{" "}
-                    {/* NEW FIELD */}
-                  </MDBox>
-                  <MDBox component="th" py={1.5} px={3}>
-                    <MDTypography variant="overline" fontWeight="bold">
-                      Exp. Completion
-                    </MDTypography>{" "}
-                    {/* NEW FIELD */}
-                  </MDBox>
-                  <MDBox component="th" py={1.5} px={3}>
-                    <MDTypography variant="overline" fontWeight="bold">
-                      Status
+          <MDBox
+            component="table"
+            width="100%"
+            sx={{ "& .MuiTableRow-root:not(:last-child)": { "& td": { borderBottom: 0 } } }}
+          >
+            <thead>
+              <MDBox component="tr" bgColor="light" textAlign="left">
+                {/* REMOVED: Project Name, Form Name */}
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Customer
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Server Name
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Public IP
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    OS Type
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Status
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Created At
+                  </MDTypography>
+                </MDBox>
+                {/* --- REMOVED: Start Date, Exp. Compl. Date, Act. Compl. Date --- */}
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Core
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    RAM
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    HDD
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Ports
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Location
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    URL
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Actions
+                  </MDTypography>
+                </MDBox>
+              </MDBox>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <MDBox component="tr" key={item.id}>
+                  {/* REMOVED: item.project_name, item.form_name */}
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.customer}
                     </MDTypography>
                   </MDBox>
-                  <MDBox component="th" py={1.5} px={3}>
-                    <MDTypography variant="overline" fontWeight="bold">
-                      Actions
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.server_name}
                     </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.public_ip || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.os_type || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.status}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </MDTypography>
+                  </MDBox>
+                  {/* --- REMOVED: item.start_date, item.expected_completion_date, item.actual_completion_date --- */}
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.core || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.ram || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.hdd || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.ports || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.location || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.url || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDButton
+                      variant="text"
+                      color="dark"
+                      onClick={() => handleEditClick(item)}
+                      sx={{ mr: 1 }}
+                    >
+                      <Icon>edit</Icon>&nbsp;Edit
+                    </MDButton>
+                    <MDButton variant="text" color="error" onClick={() => handleDeleteClick(item)}>
+                      <Icon>delete</Icon>&nbsp;Delete
+                    </MDButton>
                   </MDBox>
                 </MDBox>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <MDBox component="tr" key={item.id}>
-                    <MDBox component="td" p={1.5} px={3}>
-                      <MDTypography variant="button" fontWeight="regular">
-                        {item.project_name} {/* Changed from item.name */}
-                      </MDTypography>
-                    </MDBox>
-                    <MDBox component="td" p={1.5} px={3}>
-                      <MDTypography variant="button" fontWeight="regular">
-                        {item.form_name} {/* NEW FIELD */}
-                      </MDTypography>
-                    </MDBox>
-                    <MDBox component="td" p={1.5} px={3}>
-                      <MDTypography variant="button" fontWeight="regular">
-                        {item.start_date} {/* NEW FIELD */}
-                      </MDTypography>
-                    </MDBox>
-                    <MDBox component="td" p={1.5} px={3}>
-                      <MDTypography variant="button" fontWeight="regular">
-                        {item.expected_completion_date} {/* NEW FIELD */}
-                      </MDTypography>
-                    </MDBox>
-                    <MDBox component="td" p={1.5} px={3}>
-                      <MDTypography variant="button" fontWeight="regular">
-                        {item.status}
-                      </MDTypography>
-                    </MDBox>
-                    <MDBox component="td" p={1.5} px={3}>
-                      <MDButton
-                        variant="text"
-                        color="dark"
-                        onClick={() => handleEditClick(item)}
-                        sx={{ mr: 1 }}
-                      >
-                        <Icon>edit</Icon>&nbsp;Edit
-                      </MDButton>
-                      <MDButton
-                        variant="text"
-                        color="error"
-                        onClick={() => handleDeleteClick(item)}
-                      >
-                        <Icon>delete</Icon>&nbsp;Delete
-                      </MDButton>
-                    </MDBox>
-                  </MDBox>
-                ))}
-              </tbody>
-            </MDBox>
+              ))}
+            </tbody>
           </MDBox>
         )}
       </MDBox>
@@ -231,8 +303,8 @@ function Tables() {
         <DialogTitle id="alert-dialog-title">{"Confirm Deletion"}</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete the item &quot;{itemToDelete ? itemToDelete.name : ""}
-            &quot;? This action cannot be undone. {/* <--- CORRECTED LINE */}
+            Are you sure you want to delete the item &quot;
+            {itemToDelete ? itemToDelete.project_name : ""}&quot;? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

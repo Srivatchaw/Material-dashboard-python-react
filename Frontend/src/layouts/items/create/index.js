@@ -1,3 +1,5 @@
+// src/layouts/items/create/index.js
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -7,8 +9,8 @@ import axios from "axios";
 import Card from "@mui/material/Card";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
-import Icon from "@mui/material/Icon"; // For error icon
-import Grid from "@mui/material/Grid"; // <--- Import Grid
+import Icon from "@mui/material/Icon";
+import Grid from "@mui/material/Grid";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -29,21 +31,46 @@ function CreateItem() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // States for all new fields
+  // Existing states (renamed for clarity where needed)
   const [projectName, setProjectName] = useState("");
   const [formName, setFormName] = useState("");
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState(""); // YYYY-MM-DD format
-  const [expectedCompletionDate, setExpectedCompletionDate] = useState(""); // YYYY-MM-DD format
-  const [actualCompletionDate, setActualCompletionDate] = useState(""); // YYYY-MM-DD format, optional
+  // const [description, setDescription] = useState(""); // <--- REMOVED from useState and JSX
+  const [startDate, setStartDate] = useState("");
+  const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
+  const [actualCompletionDate, setActualCompletionDate] = useState("");
   const [status, setStatus] = useState("Pending");
-  const [reasonForDelay, setReasonForDelay] = useState(""); // Optional
+  // const [reasonForDelay, setReasonForDelay] = useState(""); // <--- REMOVED from useState and JSX
+
+  // --- NEW STATES FOR YOUR FIELDS ---
+  const [customer, setCustomer] = useState("");
+  const [publicIp, setPublicIp] = useState("");
+  const [privateIp, setPrivateIp] = useState("");
+  const [osType, setOsType] = useState("");
+  const [rootUsername, setRootUsername] = useState("");
+  const [rootPassword, setRootPassword] = useState("");
+  const [serverUsername, setServerUsername] = useState("");
+  const [serverPassword, setServerPassword] = useState("");
+  const [serverName, setServerName] = useState("");
+  const [core, setCore] = useState("");
+  const [ram, setRam] = useState("");
+  const [hdd, setHdd] = useState("");
+  const [ports, setPorts] = useState("");
+  const [location, setLocation] = useState("");
+  const [applications, setApplications] = useState("");
+  const [dbName, setDbName] = useState("");
+  const [dbPassword, setDbPassword] = useState("");
+  const [dbPort, setDbPort] = useState("");
+  const [dumpLocation, setDumpLocation] = useState("");
+  const [crontabConfig, setCrontabConfig] = useState("");
+  const [backupLocation, setBackupLocation] = useState("");
+  const [url, setUrl] = useState("");
+  const [loginName, setLoginName] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  // --- END NEW STATES ---
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarColor, setSnackbarColor] = useState("error");
-
-  // State to track validation errors for each field
   const [errors, setErrors] = useState({});
 
   const openSnackbar = (message, color) => {
@@ -59,27 +86,46 @@ function CreateItem() {
     let formIsValid = true;
 
     if (!projectName.trim()) {
-      newErrors.projectName = "The project name is required.";
+      newErrors.projectName = "Project Name is required.";
       formIsValid = false;
     }
     if (!formName.trim()) {
-      newErrors.formName = "The form name is required.";
+      newErrors.formName = "Form Name is required.";
       formIsValid = false;
     }
-    if (!startDate) {
-      newErrors.startDate = "The start date is required.";
+    // if (!startDate) { newErrors.startDate = "Start Date is required."; formIsValid = false; } // No longer required
+    // if (!expectedCompletionDate) { newErrors.expectedCompletionDate = "Expected Completion Date is required."; formIsValid = false; } // No longer required
+    // if (!status.trim()) { newErrors.status = "Status is required."; formIsValid = false; } // No longer required
+    if (!customer.trim()) {
+      newErrors.customer = "Customer name is required.";
       formIsValid = false;
     }
-    if (!expectedCompletionDate) {
-      newErrors.expectedCompletionDate = "The expected completion date is required.";
-      formIsValid = false;
-    }
-    if (!status.trim()) {
-      newErrors.status = "The status is required.";
+    if (!serverName.trim()) {
+      newErrors.serverName = "Server Name is required.";
       formIsValid = false;
     }
 
-    // Add more validation rules as needed (e.g., date formats, date comparisons)
+    // Add validation for other fields as needed (e.g., IP format, URL format)
+    if (publicIp && !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(publicIp)) {
+      newErrors.publicIp = "Invalid Public IP format.";
+      formIsValid = false;
+    }
+    if (privateIp && !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(privateIp)) {
+      newErrors.privateIp = "Invalid Private IP format.";
+      formIsValid = false;
+    }
+    if (url && !/^https?:\/\/\S+$/.test(url)) {
+      newErrors.url = "Invalid URL format.";
+      formIsValid = false;
+    }
+    if (core && (isNaN(core) || parseInt(core, 10) < 1)) {
+      newErrors.core = "Core must be a positive number.";
+      formIsValid = false;
+    }
+    if (dbPort && (isNaN(dbPort) || parseInt(dbPort, 10) < 1 || parseInt(dbPort, 10) > 65535)) {
+      newErrors.dbPort = "DB Port must be a valid port number.";
+      formIsValid = false;
+    }
 
     setErrors(newErrors);
     return formIsValid;
@@ -104,12 +150,38 @@ function CreateItem() {
         {
           project_name: projectName,
           form_name: formName,
-          description: description,
-          start_date: startDate,
-          expected_completion_date: expectedCompletionDate,
-          actual_completion_date: actualCompletionDate || null, // Send null if empty
-          status: status,
-          reason_for_delay: reasonForDelay,
+          // description: description, // REMOVED from payload
+          start_date: startDate || null, // Send null if empty
+          expected_completion_date: expectedCompletionDate || null, // Send null if empty
+          actual_completion_date: actualCompletionDate || null,
+          status: status, // Send current status
+          // reason_for_delay: reasonForDelay, // REMOVED from payload
+          // --- NEW FIELDS PAYLOAD ---
+          customer,
+          public_ip: publicIp,
+          private_ip: privateIp,
+          os_type: osType,
+          root_username: rootUsername,
+          root_password: rootPassword,
+          server_username: serverUsername,
+          server_password: serverPassword,
+          server_name: serverName,
+          core: core ? parseInt(core, 10) : null,
+          ram,
+          hdd,
+          ports,
+          location,
+          applications,
+          db_name: dbName,
+          db_password: dbPassword,
+          db_port: dbPort ? parseInt(dbPort, 10) : null,
+          dump_location: dumpLocation,
+          crontab_config: crontabConfig,
+          backup_location: backupLocation,
+          url,
+          login_name: loginName,
+          login_password: loginPassword,
+          // --- END NEW FIELDS PAYLOAD ---
         },
         {
           headers: {
@@ -117,7 +189,6 @@ function CreateItem() {
           },
         }
       );
-      console.log("Item creation successful response:", response.data);
       openSnackbar(response.data.message, "success");
       setTimeout(() => {
         navigate("/tables");
@@ -138,13 +209,7 @@ function CreateItem() {
     <DashboardLayout>
       <DashboardNavbar />
       <MDBox pt={6} pb={3} minHeight="calc(100vh - 180px)" display="flex" alignItems="center">
-        <MDBox
-          component={Card}
-          maxWidth="lg" // <--- Increased max width for more side-by-side space
-          mx="auto"
-          p={3}
-          width="100%"
-        >
+        <MDBox component={Card} maxWidth="xl" mx="auto" p={3} width="100%">
           <MDBox p={2} lineHeight={1} textAlign="center">
             <MDTypography variant="h5" fontWeight="medium">
               Create New Item
@@ -180,11 +245,8 @@ function CreateItem() {
 
           <MDBox component="form" role="form" onSubmit={handleCreateItem} pt={2}>
             <Grid container spacing={3}>
-              {" "}
-              {/* <--- Use Grid container */}
+              {/* --- FIRST ROW: Project Name, Form Name --- */}
               <Grid item xs={12} sm={6}>
-                {" "}
-                {/* <--- Project Name (half width on small, full on extra small) */}
                 <MDInput
                   type="text"
                   label="Project Name *"
@@ -203,8 +265,6 @@ function CreateItem() {
                 )}
               </Grid>
               <Grid item xs={12} sm={6}>
-                {" "}
-                {/* <--- Form Name (half width on small, full on extra small) */}
                 <MDInput
                   type="text"
                   label="Form Name *"
@@ -222,113 +282,344 @@ function CreateItem() {
                   </MDTypography>
                 )}
               </Grid>
+
+              {/* --- SECOND ROW: Customer, Server Name --- */}
               <Grid item xs={12} sm={6}>
-                {" "}
-                {/* <--- Start Date */}
                 <MDInput
-                  type="date"
-                  label="Start Date *"
+                  type="text"
+                  label="Customer *"
                   fullWidth
-                  value={startDate}
+                  value={customer}
                   onChange={(e) => {
-                    setStartDate(e.target.value);
-                    if (errors.startDate) setErrors((prev) => ({ ...prev, startDate: "" }));
+                    setCustomer(e.target.value);
+                    if (errors.customer) setErrors((prev) => ({ ...prev, customer: "" }));
                   }}
-                  error={!!errors.startDate}
-                  InputLabelProps={{ shrink: true }}
+                  error={!!errors.customer}
                 />
-                {errors.startDate && (
+                {errors.customer && (
                   <MDTypography variant="caption" color="error" display="block">
-                    {errors.startDate}
+                    {errors.customer}
                   </MDTypography>
                 )}
               </Grid>
               <Grid item xs={12} sm={6}>
-                {" "}
-                {/* <--- Expected Completion Date */}
                 <MDInput
-                  type="date"
-                  label="Expected Completion Date *"
+                  type="text"
+                  label="Server Name *"
                   fullWidth
-                  value={expectedCompletionDate}
+                  value={serverName}
                   onChange={(e) => {
-                    setExpectedCompletionDate(e.target.value);
-                    if (errors.expectedCompletionDate)
-                      setErrors((prev) => ({ ...prev, expectedCompletionDate: "" }));
+                    setServerName(e.target.value);
+                    if (errors.serverName) setErrors((prev) => ({ ...prev, serverName: "" }));
                   }}
-                  error={!!errors.expectedCompletionDate}
-                  InputLabelProps={{ shrink: true }}
+                  error={!!errors.serverName}
                 />
-                {errors.expectedCompletionDate && (
+                {errors.serverName && (
                   <MDTypography variant="caption" color="error" display="block">
-                    {errors.expectedCompletionDate}
+                    {errors.serverName}
+                  </MDTypography>
+                )}
+              </Grid>
+
+              {/* --- THIRD ROW: Public IP, Private IP --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Public IP (Optional)"
+                  fullWidth
+                  value={publicIp}
+                  onChange={(e) => {
+                    setPublicIp(e.target.value);
+                    if (errors.publicIp) setErrors((prev) => ({ ...prev, publicIp: "" }));
+                  }}
+                  error={!!errors.publicIp}
+                />
+                {errors.publicIp && (
+                  <MDTypography variant="caption" color="error" display="block">
+                    {errors.publicIp}
                   </MDTypography>
                 )}
               </Grid>
               <Grid item xs={12} sm={6}>
-                {" "}
-                {/* <--- Actual Completion Date */}
                 <MDInput
-                  type="date"
-                  label="Actual Completion Date (Optional)"
+                  type="text"
+                  label="Private IP (Optional)"
                   fullWidth
-                  value={actualCompletionDate}
-                  onChange={(e) => setActualCompletionDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
+                  value={privateIp}
+                  onChange={(e) => {
+                    setPrivateIp(e.target.value);
+                    if (errors.privateIp) setErrors((prev) => ({ ...prev, privateIp: "" }));
+                  }}
+                  error={!!errors.privateIp}
+                />
+                {errors.privateIp && (
+                  <MDTypography variant="caption" color="error" display="block">
+                    {errors.privateIp}
+                  </MDTypography>
+                )}
+              </Grid>
+
+              {/* --- FOURTH ROW: OS Type, Root Username --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="OS Type (Optional)"
+                  fullWidth
+                  value={osType}
+                  onChange={(e) => setOsType(e.target.value)}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                {" "}
-                {/* <--- Status */}
                 <MDInput
-                  select
-                  label="Status *"
+                  type="text"
+                  label="Root Username (Optional)"
                   fullWidth
-                  value={status}
+                  value={rootUsername}
+                  onChange={(e) => setRootUsername(e.target.value)}
+                />
+              </Grid>
+
+              {/* --- FIFTH ROW: Root Password, Server Username --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="password"
+                  label="Root Password (Optional)"
+                  fullWidth
+                  value={rootPassword}
+                  onChange={(e) => setRootPassword(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Server Username (Optional)"
+                  fullWidth
+                  value={serverUsername}
+                  onChange={(e) => setServerUsername(e.target.value)}
+                />
+              </Grid>
+
+              {/* --- SIXTH ROW: Server Password, Core --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="password"
+                  label="Server Password (Optional)"
+                  fullWidth
+                  value={serverPassword}
+                  onChange={(e) => setServerPassword(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="number"
+                  label="Core (Optional)"
+                  fullWidth
+                  value={core}
                   onChange={(e) => {
-                    setStatus(e.target.value);
-                    if (errors.status) setErrors((prev) => ({ ...prev, status: "" }));
+                    setCore(e.target.value);
+                    if (errors.core) setErrors((prev) => ({ ...prev, core: "" }));
                   }}
-                  error={!!errors.status}
-                >
+                  error={!!errors.core}
+                />
+                {errors.core && (
+                  <MDTypography variant="caption" color="error" display="block">
+                    {errors.core}
+                  </MDTypography>
+                )}
+              </Grid>
+
+              {/* --- SEVENTH ROW: RAM, HDD --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="RAM (Optional)"
+                  fullWidth
+                  value={ram}
+                  onChange={(e) => setRam(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="HDD (Optional)"
+                  fullWidth
+                  value={hdd}
+                  onChange={(e) => setHdd(e.target.value)}
+                />
+              </Grid>
+
+              {/* --- EIGHTH ROW: Ports, Location --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Ports (Optional)"
+                  fullWidth
+                  value={ports}
+                  onChange={(e) => setPorts(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Location (Optional)"
+                  fullWidth
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </Grid>
+
+              {/* --- NINTH ROW: Applications, DB Name --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Applications (Optional)"
+                  fullWidth
+                  multiline
+                  rows={2}
+                  value={applications}
+                  onChange={(e) => setApplications(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="DB Name (Optional)"
+                  fullWidth
+                  value={dbName}
+                  onChange={(e) => setDbName(e.target.value)}
+                />
+              </Grid>
+
+              {/* --- TENTH ROW: DB Password, DB Port --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="password"
+                  label="DB Password (Optional)"
+                  fullWidth
+                  value={dbPassword}
+                  onChange={(e) => setDbPassword(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="number"
+                  label="DB Port (Optional)"
+                  fullWidth
+                  value={dbPort}
+                  onChange={(e) => {
+                    setDbPort(e.target.value);
+                    if (errors.dbPort) setErrors((prev) => ({ ...prev, dbPort: "" }));
+                  }}
+                  error={!!errors.dbPort}
+                />
+                {errors.dbPort && (
+                  <MDTypography variant="caption" color="error" display="block">
+                    {errors.dbPort}
+                  </MDTypography>
+                )}
+              </Grid>
+
+              {/* --- ELEVENTH ROW: Dump Location, Crontab Config --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Dump Location (Optional)"
+                  fullWidth
+                  value={dumpLocation}
+                  onChange={(e) => setDumpLocation(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Crontab Config (Optional)"
+                  fullWidth
+                  multiline
+                  rows={2}
+                  value={crontabConfig}
+                  onChange={(e) => setCrontabConfig(e.target.value)}
+                />
+              </Grid>
+
+              {/* --- TWELFTH ROW: Backup Location, URL --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Backup Location (Optional)"
+                  fullWidth
+                  value={backupLocation}
+                  onChange={(e) => setBackupLocation(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="url"
+                  label="URL (Optional)"
+                  fullWidth
+                  value={url}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    if (errors.url) setErrors((prev) => ({ ...prev, url: "" }));
+                  }}
+                  error={!!errors.url}
+                />
+                {errors.url && (
+                  <MDTypography variant="caption" color="error" display="block">
+                    {errors.url}
+                  </MDTypography>
+                )}
+              </Grid>
+
+              {/* --- THIRTEENTH ROW: Login Name, Login Password --- */}
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="text"
+                  label="Login Name (Optional)"
+                  fullWidth
+                  value={loginName}
+                  onChange={(e) => setLoginName(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput
+                  type="password"
+                  label="Login Password (Optional)"
+                  fullWidth
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                />
+              </Grid>
+
+              {/* --- FOURTEENTH ROW: Dates & Status (These are removed from this form) --- */}
+              {/* <Grid item xs={12} sm={6}>
+                <MDInput type="date" label="Start Date *" fullWidth value={startDate} onChange={(e) => { setStartDate(e.target.value); if (errors.startDate) setErrors(prev => ({...prev, startDate: ''})); }} error={!!errors.startDate} InputLabelProps={{ shrink: true }} />
+                {errors.startDate && (<MDTypography variant="caption" color="error" display="block">{errors.startDate}</MDTypography>)}
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput type="date" label="Expected Completion Date *" fullWidth value={expectedCompletionDate} onChange={(e) => { setExpectedCompletionDate(e.target.value); if (errors.expectedCompletionDate) setErrors(prev => ({...prev, expectedCompletionDate: ''})); }} error={!!errors.expectedCompletionDate} InputLabelProps={{ shrink: true }} />
+                {errors.expectedCompletionDate && (<MDTypography variant="caption" color="error" display="block">{errors.expectedCompletionDate}</MDTypography>)}
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput type="date" label="Actual Completion Date (Optional)" fullWidth value={actualCompletionDate} onChange={(e) => setActualCompletionDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <MDInput select label="Status *" fullWidth value={status} onChange={(e) => { setStatus(e.target.value); if (errors.status) setErrors(prev => ({...prev, status: ''})); }} error={!!errors.status} >
                   <MenuItem value="Pending">Pending</MenuItem>
                   <MenuItem value="In Progress">In Progress</MenuItem>
                   <MenuItem value="Completed">Completed</MenuItem>
                   <MenuItem value="On Hold">On Hold</MenuItem>
                   <MenuItem value="Cancelled">Cancelled</MenuItem>
                 </MDInput>
-                {errors.status && (
-                  <MDTypography variant="caption" color="error" display="block">
-                    {errors.status}
-                  </MDTypography>
-                )}
+                {errors.status && (<MDTypography variant="caption" color="error" display="block">{errors.status}</MDTypography>)}
+              </Grid> */}
+
+              {/* --- FIFTEENTH ROW: Description & Reason for Delay (Full Width) --- */}
+              {/* <Grid item xs={12}>
+                <MDInput type="text" label="Reason for Delay (Optional)" fullWidth multiline rows={2} value={reasonForDelay} onChange={(e) => setReasonForDelay(e.target.value)} />
               </Grid>
               <Grid item xs={12}>
-                {" "}
-                {/* <--- Reason for Delay (full width) */}
-                <MDInput
-                  type="text"
-                  label="Reason for Delay (Optional)"
-                  fullWidth
-                  multiline
-                  rows={2}
-                  value={reasonForDelay}
-                  onChange={(e) => setReasonForDelay(e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                {" "}
-                {/* <--- Description (full width) */}
-                <MDInput
-                  type="text"
-                  label="Description (Optional)"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </Grid>
+                <MDInput type="text" label="Description (Optional)" fullWidth multiline rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
+              </Grid> */}
             </Grid>
 
             <MDBox mt={4} mb={1}>

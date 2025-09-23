@@ -1,29 +1,26 @@
 from flask import Blueprint, request, jsonify, g
 from .models import db, User, LoginHistory, Item
 from flask_cors import cross_origin
-from datetime import datetime, date # Import date as well
+from datetime import datetime, date
 import functools
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 items_bp = Blueprint('items', __name__, url_prefix='/api/items')
 
-# --- Authentication Decorator (Simple for now) ---
+# --- Authentication Decorator ---
 def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         user_id = request.headers.get('X-User-ID')
         if not user_id:
             return jsonify({'message': 'Authentication required. X-User-ID header missing.'}), 401
-        
         user = User.query.get(user_id)
         if not user:
             return jsonify({'message': 'Invalid user ID.'}), 401
-        
         g.user = user
         return view(**kwargs)
     return wrapped_view
 
-# --- Auth Endpoints (signup and signin from previous steps) ---
 @auth_bp.route('/signup', methods=['POST'])
 @cross_origin()
 def signup():
@@ -31,18 +28,14 @@ def signup():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-
     if not username or not email or not password:
         return jsonify({'message': 'All fields are required!'}), 400
-
     if User.query.filter_by(username=username).first():
         return jsonify({'message': 'Username already exists'}), 409
     if User.query.filter_by(email=email).first():
         return jsonify({'message': 'Email already exists'}), 409
-
     new_user = User(username=username, email=email)
     new_user.set_password(password)
-
     try:
         db.session.add(new_user)
         db.session.commit()
@@ -57,16 +50,12 @@ def signin():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-
     if not username or not password:
         print("DEBUG: SIGNIN - Username or password missing from request.")
         return jsonify({'message': 'Username and password are required!'}), 400
-
     user = User.query.filter_by(username=username).first()
-
     if user and user.check_password(password):
         print(f"DEBUG: SIGNIN - User '{username}' authenticated successfully.")
-        
         try:
             login_ip = request.remote_addr
             new_login_entry = LoginHistory(
@@ -74,18 +63,14 @@ def signin():
                 login_time=datetime.utcnow(),
                 login_ip=login_ip
             )
-
             print(f"DEBUG: SIGNIN - Attempting to add LoginHistory entry: User ID={user.id}, IP={login_ip}, Time={new_login_entry.login_time}")
-
             db.session.add(new_login_entry)
             db.session.commit()
             print("DEBUG: SIGNIN - LoginHistory entry committed successfully.")
-
         except Exception as e:
             db.session.rollback()
             print(f"ERROR: SIGNIN - Failed to record login history for user '{username}': {e}")
             pass
-
         return jsonify({'message': 'Login successful!', 'user_id': user.id, 'username': user.username}), 200
     else:
         print(f"DEBUG: SIGNIN - Invalid credentials for user '{username}'.")
@@ -99,37 +84,91 @@ def create_item():
     print("DEBUG: CREATE_ITEM - Endpoint accessed.")
     data = request.get_json()
     
-    # Retrieve all new fields
     project_name = data.get('project_name')
     form_name = data.get('form_name')
     description = data.get('description')
     start_date_str = data.get('start_date')
     expected_completion_date_str = data.get('expected_completion_date')
     actual_completion_date_str = data.get('actual_completion_date')
-    status = data.get('status', 'Pending')
+    status = data.get('status', 'Pending') # Keep default if not provided
     reason_for_delay = data.get('reason_for_delay')
 
-    # Basic validation for required fields
-    if not project_name or not form_name or not start_date_str or not expected_completion_date_str:
-        return jsonify({'message': 'Project Name, Form Name, Start Date, and Expected Completion Date are required!'}), 400
+    # NEW FIELDS
+    customer = data.get('customer')
+    public_ip = data.get('public_ip')
+    private_ip = data.get('private_ip')
+    os_type = data.get('os_type')
+    root_username = data.get('root_username')
+    root_password = data.get('root_password')
+    server_username = data.get('server_username')
+    server_password = data.get('server_password')
+    server_name = data.get('server_name')
+    core = data.get('core')
+    ram = data.get('ram')
+    hdd = data.get('hdd')
+    ports = data.get('ports')
+    location = data.get('location')
+    applications = data.get('applications')
+    db_name = data.get('db_name')
+    db_password = data.get('db_password')
+    db_port = data.get('db_port')
+    dump_location = data.get('dump_location')
+    crontab_config = data.get('crontab_config')
+    backup_location = data.get('backup_location')
+    url = data.get('url')
+    login_name = data.get('login_name')
+    login_password = data.get('login_password')
+
+    # Basic validation for REQUIRED fields (adjust based on your needs)
+    # Changed validation: Removed start_date_str, expected_completion_date_str, status from REQUIRED
+    if not all([project_name, form_name, customer, server_name]):
+        return jsonify({'message': 'All required fields (Project Name, Form Name, Customer, Server Name) must be filled.'}), 400
 
     try:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        expected_completion_date = datetime.strptime(expected_completion_date_str, '%Y-%m-%d').date()
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
+        expected_completion_date = datetime.strptime(expected_completion_date_str, '%Y-%m-%d').date() if expected_completion_date_str else None
         actual_completion_date = datetime.strptime(actual_completion_date_str, '%Y-%m-%d').date() if actual_completion_date_str else None
-    except ValueError:
-        return jsonify({'message': 'Invalid date format. Use YYYY-MM-DD.'}), 400
+        
+        core_int = int(core) if core else None
+        db_port_int = int(db_port) if db_port else None
+    except ValueError as ve:
+        print(f"ERROR: CREATE_ITEM - Date/Integer parsing error: {ve}")
+        return jsonify({'message': 'Invalid date or number format. Dates must be YYYY-MM-DD. Core and DB Port must be numbers.'}), 400
 
     new_item = Item(
         user_id=g.user.id,
         project_name=project_name,
         form_name=form_name,
-        description=description,
-        start_date=start_date,
-        expected_completion_date=expected_completion_date,
+        description=description, # description is now nullable
+        start_date=start_date, # Now nullable
+        expected_completion_date=expected_completion_date, # Now nullable
         actual_completion_date=actual_completion_date,
-        status=status,
-        reason_for_delay=reason_for_delay
+        status=status, # Now nullable in model, default='Pending'
+        reason_for_delay=reason_for_delay, # Now nullable
+        customer=customer,
+        public_ip=public_ip,
+        private_ip=private_ip,
+        os_type=os_type,
+        root_username=root_username,
+        root_password=root_password,
+        server_username=server_username,
+        server_password=server_password,
+        server_name=server_name,
+        core=core_int,
+        ram=ram,
+        hdd=hdd,
+        ports=ports,
+        location=location,
+        applications=applications,
+        db_name=db_name,
+        db_password=db_password,
+        db_port=db_port_int,
+        dump_location=dump_location,
+        crontab_config=crontab_config,
+        backup_location=backup_location,
+        url=url,
+        login_name=login_name,
+        login_password=login_password
     )
 
     try:
@@ -141,12 +180,36 @@ def create_item():
             'project_name': new_item.project_name,
             'form_name': new_item.form_name,
             'description': new_item.description,
-            'start_date': new_item.start_date.isoformat(),
-            'expected_completion_date': new_item.expected_completion_date.isoformat(),
+            'start_date': new_item.start_date.isoformat() if new_item.start_date else None,
+            'expected_completion_date': new_item.expected_completion_date.isoformat() if new_item.expected_completion_date else None,
             'actual_completion_date': new_item.actual_completion_date.isoformat() if new_item.actual_completion_date else None,
             'status': new_item.status,
             'reason_for_delay': new_item.reason_for_delay,
-            'created_at': new_item.created_at.isoformat()
+            'created_at': new_item.created_at.isoformat(),
+            'customer': new_item.customer,
+            'public_ip': new_item.public_ip,
+            'private_ip': new_item.private_ip,
+            'os_type': new_item.os_type,
+            'root_username': new_item.root_username,
+            'root_password': new_item.root_password,
+            'server_username': new_item.server_username,
+            'server_password': new_item.server_password,
+            'server_name': new_item.server_name,
+            'core': new_item.core,
+            'ram': new_item.ram,
+            'hdd': new_item.hdd,
+            'ports': new_item.ports,
+            'location': new_item.location,
+            'applications': new_item.applications,
+            'db_name': new_item.db_name,
+            'db_password': new_item.db_password,
+            'db_port': new_item.db_port,
+            'dump_location': new_item.dump_location,
+            'crontab_config': new_item.crontab_config,
+            'backup_location': new_item.backup_location,
+            'url': new_item.url,
+            'login_name': new_item.login_name,
+            'login_password': new_item.login_password
         }}), 201
     except Exception as e:
         db.session.rollback()
@@ -167,12 +230,36 @@ def get_all_items():
             'project_name': item.project_name,
             'form_name': item.form_name,
             'description': item.description,
-            'start_date': item.start_date.isoformat(),
-            'expected_completion_date': item.expected_completion_date.isoformat(),
+            'start_date': item.start_date.isoformat() if item.start_date else None,
+            'expected_completion_date': item.expected_completion_date.isoformat() if item.expected_completion_date else None,
             'actual_completion_date': item.actual_completion_date.isoformat() if item.actual_completion_date else None,
             'status': item.status,
             'reason_for_delay': item.reason_for_delay,
-            'created_at': item.created_at.isoformat()
+            'created_at': item.created_at.isoformat(),
+            'customer': item.customer,
+            'public_ip': item.public_ip,
+            'private_ip': item.private_ip,
+            'os_type': item.os_type,
+            'root_username': item.root_username,
+            'root_password': item.root_password,
+            'server_username': item.server_username,
+            'server_password': item.server_password,
+            'server_name': item.server_name,
+            'core': item.core,
+            'ram': item.ram,
+            'hdd': item.hdd,
+            'ports': item.ports,
+            'location': item.location,
+            'applications': item.applications,
+            'db_name': item.db_name,
+            'db_password': item.db_password,
+            'db_port': item.db_port,
+            'dump_location': item.dump_location,
+            'crontab_config': item.crontab_config,
+            'backup_location': item.backup_location,
+            'url': item.url,
+            'login_name': item.login_name,
+            'login_password': item.login_password
         })
     print(f"DEBUG: GET_ALL_ITEMS - Returning {len(items_data)} items for user {g.user.username}.")
     return jsonify(items_data), 200
@@ -192,12 +279,36 @@ def get_single_item(item_id):
         'project_name': item.project_name,
         'form_name': item.form_name,
         'description': item.description,
-        'start_date': item.start_date.isoformat(),
-        'expected_completion_date': item.expected_completion_date.isoformat(),
+        'start_date': item.start_date.isoformat() if item.start_date else None,
+        'expected_completion_date': item.expected_completion_date.isoformat() if item.expected_completion_date else None,
         'actual_completion_date': item.actual_completion_date.isoformat() if item.actual_completion_date else None,
         'status': item.status,
         'reason_for_delay': item.reason_for_delay,
-        'created_at': item.created_at.isoformat()
+        'created_at': item.created_at.isoformat(),
+        'customer': item.customer,
+        'public_ip': item.public_ip,
+        'private_ip': item.private_ip,
+        'os_type': item.os_type,
+        'root_username': item.root_username,
+        'root_password': item.root_password,
+        'server_username': item.server_username,
+        'server_password': item.server_password,
+        'server_name': item.server_name,
+        'core': item.core,
+        'ram': item.ram,
+        'hdd': item.hdd,
+        'ports': item.ports,
+        'location': item.location,
+        'applications': item.applications,
+        'db_name': item.db_name,
+        'db_password': item.db_password,
+        'db_port': item.db_port,
+        'dump_location': item.dump_location,
+        'crontab_config': item.crontab_config,
+        'backup_location': item.backup_location,
+        'url': item.url,
+        'login_name': item.login_name,
+        'login_password': item.login_password
     }), 200
 
 # --- Update an item ---
@@ -212,41 +323,53 @@ def update_item(item_id):
 
     data = request.get_json()
     
-    # Update all new fields, handling potential missing values
     item.project_name = data.get('project_name', item.project_name)
     item.form_name = data.get('form_name', item.form_name)
-    item.description = data.get('description', item.description)
+    item.description = data.get('description', item.description) # description is now nullable
     
     start_date_str = data.get('start_date')
-    if start_date_str:
-        try:
-            item.start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            return jsonify({'message': 'Invalid start date format. Use YYYY-MM-DD.'}), 400
-
+    item.start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
+    
     expected_completion_date_str = data.get('expected_completion_date')
-    if expected_completion_date_str:
-        try:
-            item.expected_completion_date = datetime.strptime(expected_completion_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            return jsonify({'message': 'Invalid expected completion date format. Use YYYY-MM-DD.'}), 400
-
+    item.expected_completion_date = datetime.strptime(expected_completion_date_str, '%Y-%m-%d').date() if expected_completion_date_str else None
+    
     actual_completion_date_str = data.get('actual_completion_date')
-    if actual_completion_date_str:
-        try:
-            item.actual_completion_date = datetime.strptime(actual_completion_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            return jsonify({'message': 'Invalid actual completion date format. Use YYYY-MM-DD.'}), 400
-    else:
-        item.actual_completion_date = None # Allow clearing the actual completion date
+    item.actual_completion_date = datetime.strptime(actual_completion_date_str, '%Y-%m-%d').date() if actual_completion_date_str else None
+    
+    item.status = data.get('status', item.status) # Status is now nullable
+    item.reason_for_delay = data.get('reason_for_delay', item.reason_for_delay) # reason_for_delay is now nullable
 
-    item.status = data.get('status', item.status)
-    item.reason_for_delay = data.get('reason_for_delay', item.reason_for_delay)
+    # NEW FIELDS UPDATE
+    item.customer = data.get('customer', item.customer)
+    item.public_ip = data.get('public_ip', item.public_ip)
+    item.private_ip = data.get('private_ip', item.private_ip)
+    item.os_type = data.get('os_type', item.os_type)
+    item.root_username = data.get('root_username', item.root_username)
+    item.root_password = data.get('root_password', item.root_password)
+    item.server_username = data.get('server_username', item.server_username)
+    item.server_password = data.get('server_password', item.server_password)
+    item.server_name = data.get('server_name', item.server_name)
+    item.core = int(data.get('core', item.core)) if data.get('core') else item.core # Convert to int
+    item.ram = data.get('ram', item.ram)
+    item.hdd = data.get('hdd', item.hdd)
+    item.ports = data.get('ports', item.ports)
+    item.location = data.get('location', item.location)
+    item.applications = data.get('applications', item.applications)
+    item.db_name = data.get('db_name', item.db_name)
+    item.db_password = data.get('db_password', item.db_password)
+    item.db_port = int(data.get('db_port', item.db_port)) if data.get('db_port') else item.db_port # Convert to int
+    item.dump_location = data.get('dump_location', item.dump_location)
+    item.crontab_config = data.get('crontab_config', item.crontab_config)
+    item.backup_location = data.get('backup_location', item.backup_location)
+    item.url = data.get('url', item.url)
+    item.login_name = data.get('login_name', item.login_name)
+    item.login_password = data.get('login_password', item.login_password)
 
-    # Basic validation for required fields on update
-    if not item.project_name or not item.form_name or not item.start_date or not item.expected_completion_date:
-        return jsonify({'message': 'Project Name, Form Name, Start Date, and Expected Completion Date are required!'}), 400
 
+    # Basic validation for REQUIRED fields on update (adjust based on your needs)
+    # Validation must match model's nullable status
+    if not all([item.project_name, item.form_name, item.customer, item.server_name]):
+        return jsonify({'message': 'Project Name, Form Name, Customer, and Server Name are required!'}), 400
 
     try:
         db.session.commit()
