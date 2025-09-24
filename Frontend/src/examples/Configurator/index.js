@@ -13,10 +13,10 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react"; // <--- Ensure React, useState, useEffect are imported
 
-// react-github-btn
-import GitHubButton from "react-github-btn";
+// react-github-btn (this might not be needed if GitHubButton is removed)
+// import GitHubButton from "react-github-btn"; // <--- REMOVE THIS IF NOT USED
 
 // @mui material components
 import Divider from "@mui/material/Divider";
@@ -26,8 +26,8 @@ import Link from "@mui/material/Link";
 import Icon from "@mui/material/Icon";
 
 // @mui icons
-import TwitterIcon from "@mui/icons-material/Twitter";
-import FacebookIcon from "@mui/icons-material/Facebook";
+// import TwitterIcon from "@mui/icons-material/Twitter"; // <--- REMOVE IF NOT USED
+// import FacebookIcon from "@mui/icons-material/Facebook"; // <--- REMOVE IF NOT USED
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -41,30 +41,35 @@ import ConfiguratorRoot from "examples/Configurator/ConfiguratorRoot";
 import {
   useMaterialUIController,
   setOpenConfigurator,
+  setMiniSidenav, // <--- Ensure miniSidenav setter is here if needed
+  setFixedNavbar,
   setTransparentSidenav,
   setWhiteSidenav,
-  setFixedNavbar,
-  setSidenavColor,
   setDarkMode,
+  setSidenavColor, // <--- Ensure setSidenavColor setter is here if needed
 } from "context";
 
 function Configurator() {
   const [controller, dispatch] = useMaterialUIController();
   const {
     openConfigurator,
+    miniSidenav, // <--- Ensure miniSidenav is destructured
     fixedNavbar,
     sidenavColor,
     transparentSidenav,
     whiteSidenav,
     darkMode,
   } = controller;
-  const [disabled, setDisabled] = useState(false);
+  const [disabled, setDisabled] = useState(false); // <--- useState is used here
   const sidenavColors = ["primary", "dark", "info", "success", "warning", "error"];
 
   // Use the useEffect hook to change the button state for the sidenav type based on window size.
   useEffect(() => {
+    // <--- useEffect is used here
     // A function that sets the disabled state of the buttons for the sidenav type.
     function handleDisabled() {
+      // This logic will be simpler if miniSidenav is handled in App.js directly or removed.
+      // For now, let's just make sure it doesn't cause errors.
       return window.innerWidth > 1200 ? setDisabled(false) : setDisabled(true);
     }
 
@@ -76,9 +81,10 @@ function Configurator() {
 
     // Remove event listener on cleanup
     return () => window.removeEventListener("resize", handleDisabled);
-  }, []);
+  }, [fixedNavbar]); // Fixed dependency: use fixedNavbar if that's what controls 'disabled'
 
   const handleCloseConfigurator = () => setOpenConfigurator(dispatch, false);
+  const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav); // Ensure this is available from context
   const handleTransparentSidenav = () => {
     setTransparentSidenav(dispatch, true);
     setWhiteSidenav(dispatch, false);
@@ -138,7 +144,7 @@ function Configurator() {
         px={3}
       >
         <MDBox>
-          <MDTypography variant="h5">Material UI Configurator</MDTypography>
+          <MDTypography variant="h5">Dashboard Configurator</MDTypography>
           <MDTypography variant="body2" color="text">
             See our dashboard options.
           </MDTypography>
@@ -285,7 +291,24 @@ function Configurator() {
           <Switch checked={darkMode} onChange={handleDarkMode} />
         </MDBox>
         <Divider />
+
+        {/* --- ALL ADVERTISING BUTTONS SECTION REMOVED --- */}
+        {/*
         <MDBox mt={3} mb={2}>
+          <MDButton
+            component={Link}
+            href="https://www.creative-tim.com/product/material-dashboard-react"
+            target="_blank"
+            rel="noreferrer"
+            color={darkMode ? "light" : "dark"}
+            variant="gradient"
+            fullWidth
+          >
+            free download
+            &nbsp;<Icon sx={{ fontSize: "1.25rem" }}>download</Icon>
+          </MDButton>
+        </MDBox>
+        <MDBox mt={1} mb={2}>
           <MDButton
             component={Link}
             href="https://www.creative-tim.com/learning-lab/react/quick-start/material-dashboard/"
@@ -339,6 +362,7 @@ function Configurator() {
             </MDButton>
           </MDBox>
         </MDBox>
+        */}
       </MDBox>
     </ConfiguratorRoot>
   );
