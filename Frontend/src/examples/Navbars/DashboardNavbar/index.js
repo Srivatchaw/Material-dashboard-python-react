@@ -1,27 +1,10 @@
-/**
-=========================================================
-* Material Dashboard 2 React - v2.2.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
 import { useState, useEffect } from "react";
-
-// react-router components
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom"; // Add useNavigate
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
 
-// @material-ui core components
+// @mui material components
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
@@ -31,6 +14,7 @@ import Icon from "@mui/material/Icon";
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDInput from "components/MDInput";
+import MDTypography from "components/MDTypography";
 
 // Material Dashboard 2 React example components
 import Breadcrumbs from "examples/Breadcrumbs";
@@ -53,36 +37,35 @@ import {
   setOpenConfigurator,
 } from "context";
 
+// Auth Context (Add this import)
+import { useAuth } from "contexts/AuthContext";
+
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator, darkMode } = controller;
   const [openMenu, setOpenMenu] = useState(false);
-  const route = useLocation().pathname.split("/").slice(1);
+
+  // `pathSegments` will be an array of path parts, e.g., ["dashboard", "tables"]
+  const pathSegments = useLocation().pathname.split("/").filter(Boolean);
+
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Setting the navbar type
     if (fixedNavbar) {
       setNavbarType("sticky");
     } else {
       setNavbarType("static");
     }
 
-    // A function that sets the transparent state of the navbar.
     function handleTransparentNavbar() {
       setTransparentNavbar(dispatch, (fixedNavbar && window.scrollY === 0) || !fixedNavbar);
     }
 
-    /** 
-     The event listener that's calling the handleTransparentNavbar function when 
-     scrolling the window.
-    */
     window.addEventListener("scroll", handleTransparentNavbar);
-
-    // Call the handleTransparentNavbar function to set the state with the initial value.
     handleTransparentNavbar();
 
-    // Remove event listener on cleanup
     return () => window.removeEventListener("scroll", handleTransparentNavbar);
   }, [dispatch, fixedNavbar]);
 
@@ -91,7 +74,12 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(false);
 
-  // Render the notifications menu
+  const handleLogoutClick = () => {
+    logout();
+    handleCloseMenu();
+    navigate("/authentication/sign-in");
+  };
+
   const renderMenu = () => (
     <Menu
       anchorEl={openMenu}
@@ -131,7 +119,20 @@ function DashboardNavbar({ absolute, light, isMini }) {
     >
       <Toolbar sx={(theme) => navbarContainer(theme)}>
         <MDBox color="inherit" mb={{ xs: 1, md: 0 }} sx={(theme) => navbarRow(theme, { isMini })}>
-          <Breadcrumbs icon="home" title={route[route.length - 1]} route={route} light={light} />
+          {/* --- CORRECTED BREADCRUMBS USAGE --- */}
+          {/* Breadcrumbs is now correctly designed to handle a path string */}
+          <Breadcrumbs
+            icon="home"
+            // title should be the last segment of the path, capitalized.
+            title={
+              pathSegments.length > 0
+                ? pathSegments[pathSegments.length - 1].charAt(0).toUpperCase() +
+                  pathSegments[pathSegments.length - 1].slice(1)
+                : "Dashboard"
+            }
+            route={useLocation().pathname} // Pass the full pathname as a string
+            light={light}
+          />
         </MDBox>
         {isMini ? null : (
           <MDBox sx={(theme) => navbarRow(theme, { isMini })}>
@@ -139,11 +140,30 @@ function DashboardNavbar({ absolute, light, isMini }) {
               <MDInput label="Search here" />
             </MDBox>
             <MDBox color={light ? "white" : "inherit"}>
-              <Link to="/authentication/sign-in/basic">
-                <IconButton sx={navbarIconButton} size="small" disableRipple>
-                  <Icon sx={iconsStyle}>account_circle</Icon>
+              {/* --- DYNAMIC SIGN IN / LOG OUT BUTTON (Based on AuthContext) --- */}
+              {isAuthenticated ? (
+                <IconButton
+                  sx={navbarIconButton}
+                  size="small"
+                  disableRipple
+                  onClick={handleLogoutClick}
+                >
+                  <Icon sx={iconsStyle}>logout</Icon>
+                  <MDTypography variant="button" fontWeight="medium" sx={iconsStyle}>
+                    Logout
+                  </MDTypography>
                 </IconButton>
-              </Link>
+              ) : (
+                <Link to="/authentication/sign-in">
+                  <IconButton sx={navbarIconButton} size="small" disableRipple>
+                    <Icon sx={iconsStyle}>login</Icon>
+                    <MDTypography variant="button" fontWeight="medium" sx={iconsStyle}>
+                      Sign In
+                    </MDTypography>
+                  </IconButton>
+                </Link>
+              )}
+
               <IconButton
                 size="small"
                 disableRipple
