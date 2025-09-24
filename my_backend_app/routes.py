@@ -14,9 +14,11 @@ def login_required(view):
         user_id = request.headers.get('X-User-ID')
         if not user_id:
             return jsonify({'message': 'Authentication required. X-User-ID header missing.'}), 401
+        
         user = User.query.get(user_id)
         if not user:
             return jsonify({'message': 'Invalid user ID.'}), 401
+        
         g.user = user
         return view(**kwargs)
     return wrapped_view
@@ -28,14 +30,18 @@ def signup():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
+
     if not username or not email or not password:
         return jsonify({'message': 'All fields are required!'}), 400
+
     if User.query.filter_by(username=username).first():
         return jsonify({'message': 'Username already exists'}), 409
     if User.query.filter_by(email=email).first():
         return jsonify({'message': 'Email already exists'}), 409
+
     new_user = User(username=username, email=email)
     new_user.set_password(password)
+
     try:
         db.session.add(new_user)
         db.session.commit()
@@ -50,12 +56,16 @@ def signin():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+
     if not username or not password:
         print("DEBUG: SIGNIN - Username or password missing from request.")
         return jsonify({'message': 'Username and password are required!'}), 400
+
     user = User.query.filter_by(username=username).first()
+
     if user and user.check_password(password):
         print(f"DEBUG: SIGNIN - User '{username}' authenticated successfully.")
+        
         try:
             login_ip = request.remote_addr
             new_login_entry = LoginHistory(
@@ -63,14 +73,18 @@ def signin():
                 login_time=datetime.utcnow(),
                 login_ip=login_ip
             )
+
             print(f"DEBUG: SIGNIN - Attempting to add LoginHistory entry: User ID={user.id}, IP={login_ip}, Time={new_login_entry.login_time}")
+
             db.session.add(new_login_entry)
             db.session.commit()
             print("DEBUG: SIGNIN - LoginHistory entry committed successfully.")
+
         except Exception as e:
             db.session.rollback()
             print(f"ERROR: SIGNIN - Failed to record login history for user '{username}': {e}")
             pass
+
         return jsonify({'message': 'Login successful!', 'user_id': user.id, 'username': user.username}), 200
     else:
         print(f"DEBUG: SIGNIN - Invalid credentials for user '{username}'.")
@@ -84,16 +98,7 @@ def create_item():
     print("DEBUG: CREATE_ITEM - Endpoint accessed.")
     data = request.get_json()
     
-    project_name = data.get('project_name')
-    form_name = data.get('form_name')
-    description = data.get('description')
-    start_date_str = data.get('start_date')
-    expected_completion_date_str = data.get('expected_completion_date')
-    actual_completion_date_str = data.get('actual_completion_date')
-    status = data.get('status', 'Pending') # Keep default if not provided
-    reason_for_delay = data.get('reason_for_delay')
-
-    # NEW FIELDS
+    # Only retrieve fields that exist in the model
     customer = data.get('customer')
     public_ip = data.get('public_ip')
     private_ip = data.get('private_ip')
@@ -119,32 +124,25 @@ def create_item():
     login_name = data.get('login_name')
     login_password = data.get('login_password')
 
-    # Basic validation for REQUIRED fields (adjust based on your needs)
-    # Changed validation: Removed start_date_str, expected_completion_date_str, status from REQUIRED
-    if not all([project_name, form_name, customer, server_name]):
-        return jsonify({'message': 'All required fields (Project Name, Form Name, Customer, Server Name) must be filled.'}), 400
+    # Updated Backend validation for ALL mandatory fields (matching models.py)
+    # This list must EXACTLY match the non-nullable columns in your models.py
+    if not all([
+        customer, server_name, public_ip, private_ip, os_type, root_username, root_password,
+        server_username, server_password, core, ram, hdd, ports, location, applications, db_name,
+        db_password, db_port, dump_location, crontab_config, backup_location, url, login_name, login_password
+    ]):
+        return jsonify({'message': 'All mandatory fields must be filled.'}), 400
 
     try:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
-        expected_completion_date = datetime.strptime(expected_completion_date_str, '%Y-%m-%d').date() if expected_completion_date_str else None
-        actual_completion_date = datetime.strptime(actual_completion_date_str, '%Y-%m-%d').date() if actual_completion_date_str else None
-        
-        core_int = int(core) if core else None
-        db_port_int = int(db_port) if db_port else None
+        # Core and DB Port must be numbers, convert them
+        core_int = int(core)
+        db_port_int = int(db_port)
     except ValueError as ve:
-        print(f"ERROR: CREATE_ITEM - Date/Integer parsing error: {ve}")
-        return jsonify({'message': 'Invalid date or number format. Dates must be YYYY-MM-DD. Core and DB Port must be numbers.'}), 400
+        print(f"ERROR: CREATE_ITEM - Integer parsing error: {ve}")
+        return jsonify({'message': 'Core and DB Port must be numbers.'}), 400
 
     new_item = Item(
         user_id=g.user.id,
-        project_name=project_name,
-        form_name=form_name,
-        description=description, # description is now nullable
-        start_date=start_date, # Now nullable
-        expected_completion_date=expected_completion_date, # Now nullable
-        actual_completion_date=actual_completion_date,
-        status=status, # Now nullable in model, default='Pending'
-        reason_for_delay=reason_for_delay, # Now nullable
         customer=customer,
         public_ip=public_ip,
         private_ip=private_ip,
@@ -174,43 +172,22 @@ def create_item():
     try:
         db.session.add(new_item)
         db.session.commit()
-        print(f"DEBUG: CREATE_ITEM - Item '{new_item.project_name}' created successfully with ID: {new_item.id}")
-        return jsonify({'message': 'Item created successfully!', 'item': {
+        print(f"DEBUG: CREATE_ITEM - Item '{new_item.customer}' created successfully with ID: {new_item.id}")
+        item_data = {
             'id': new_item.id,
-            'project_name': new_item.project_name,
-            'form_name': new_item.form_name,
-            'description': new_item.description,
-            'start_date': new_item.start_date.isoformat() if new_item.start_date else None,
-            'expected_completion_date': new_item.expected_completion_date.isoformat() if new_item.expected_completion_date else None,
-            'actual_completion_date': new_item.actual_completion_date.isoformat() if new_item.actual_completion_date else None,
-            'status': new_item.status,
-            'reason_for_delay': new_item.reason_for_delay,
-            'created_at': new_item.created_at.isoformat(),
             'customer': new_item.customer,
-            'public_ip': new_item.public_ip,
-            'private_ip': new_item.private_ip,
-            'os_type': new_item.os_type,
-            'root_username': new_item.root_username,
-            'root_password': new_item.root_password,
-            'server_username': new_item.server_username,
-            'server_password': new_item.server_password,
-            'server_name': new_item.server_name,
-            'core': new_item.core,
-            'ram': new_item.ram,
-            'hdd': new_item.hdd,
-            'ports': new_item.ports,
-            'location': new_item.location,
-            'applications': new_item.applications,
-            'db_name': new_item.db_name,
-            'db_password': new_item.db_password,
-            'db_port': new_item.db_port,
-            'dump_location': new_item.dump_location,
-            'crontab_config': new_item.crontab_config,
-            'backup_location': new_item.backup_location,
-            'url': new_item.url,
-            'login_name': new_item.login_name,
-            'login_password': new_item.login_password
-        }}), 201
+            'public_ip': new_item.public_ip, 'private_ip': new_item.private_ip, 'os_type': new_item.os_type,
+            'root_username': new_item.root_username, 'root_password': new_item.root_password,
+            'server_username': new_item.server_username, 'server_password': new_item.server_password,
+            'server_name': new_item.server_name, 'core': new_item.core, 'ram': new_item.ram,
+            'hdd': new_item.hdd, 'ports': new_item.ports, 'location': new_item.location,
+            'applications': new_item.applications, 'db_name': new_item.db_name, 'db_password': new_item.db_password,
+            'db_port': new_item.db_port, 'dump_location': new_item.dump_location,
+            'crontab_config': new_item.crontab_config, 'backup_location': new_item.backup_location,
+            'url': new_item.url, 'login_name': new_item.login_name, 'login_password': new_item.login_password,
+            'created_at': new_item.created_at.isoformat(),
+        }
+        return jsonify({'message': 'Item created successfully!', 'item': item_data}), 201
     except Exception as e:
         db.session.rollback()
         print(f"ERROR: CREATE_ITEM - Failed to create item for user {g.user.username}: {e}")
@@ -225,42 +202,21 @@ def get_all_items():
     
     items_data = []
     for item in items:
-        items_data.append({
-            'id': item.id,
-            'project_name': item.project_name,
-            'form_name': item.form_name,
-            'description': item.description,
-            'start_date': item.start_date.isoformat() if item.start_date else None,
-            'expected_completion_date': item.expected_completion_date.isoformat() if item.expected_completion_date else None,
-            'actual_completion_date': item.actual_completion_date.isoformat() if item.actual_completion_date else None,
-            'status': item.status,
-            'reason_for_delay': item.reason_for_delay,
-            'created_at': item.created_at.isoformat(),
+        item_data = {
+            'id': item.id, 
             'customer': item.customer,
-            'public_ip': item.public_ip,
-            'private_ip': item.private_ip,
-            'os_type': item.os_type,
-            'root_username': item.root_username,
-            'root_password': item.root_password,
-            'server_username': item.server_username,
-            'server_password': item.server_password,
-            'server_name': item.server_name,
-            'core': item.core,
-            'ram': item.ram,
-            'hdd': item.hdd,
-            'ports': item.ports,
-            'location': item.location,
-            'applications': item.applications,
-            'db_name': item.db_name,
-            'db_password': item.db_password,
-            'db_port': item.db_port,
-            'dump_location': item.dump_location,
-            'crontab_config': item.crontab_config,
-            'backup_location': item.backup_location,
-            'url': item.url,
-            'login_name': item.login_name,
-            'login_password': item.login_password
-        })
+            'public_ip': item.public_ip, 'private_ip': item.private_ip, 'os_type': item.os_type,
+            'root_username': item.root_username, 'root_password': item.root_password,
+            'server_username': item.server_username, 'server_password': item.server_password,
+            'server_name': item.server_name, 'core': item.core, 'ram': item.ram,
+            'hdd': item.hdd, 'ports': item.ports, 'location': item.location,
+            'applications': item.applications, 'db_name': item.db_name, 'db_password': item.db_password,
+            'db_port': item.db_port, 'dump_location': item.dump_location,
+            'crontab_config': item.crontab_config, 'backup_location': item.backup_location,
+            'url': item.url, 'login_name': item.login_name, 'login_password': item.login_password,
+            'created_at': item.created_at.isoformat(),
+        }
+        items_data.append(item_data)
     print(f"DEBUG: GET_ALL_ITEMS - Returning {len(items_data)} items for user {g.user.username}.")
     return jsonify(items_data), 200
 
@@ -274,42 +230,21 @@ def get_single_item(item_id):
     if not item:
         return jsonify({'message': 'Item not found or unauthorized.'}), 404
     
-    return jsonify({
-        'id': item.id,
-        'project_name': item.project_name,
-        'form_name': item.form_name,
-        'description': item.description,
-        'start_date': item.start_date.isoformat() if item.start_date else None,
-        'expected_completion_date': item.expected_completion_date.isoformat() if item.expected_completion_date else None,
-        'actual_completion_date': item.actual_completion_date.isoformat() if item.actual_completion_date else None,
-        'status': item.status,
-        'reason_for_delay': item.reason_for_delay,
-        'created_at': item.created_at.isoformat(),
+    item_data = {
+        'id': item.id, 
         'customer': item.customer,
-        'public_ip': item.public_ip,
-        'private_ip': item.private_ip,
-        'os_type': item.os_type,
-        'root_username': item.root_username,
-        'root_password': item.root_password,
-        'server_username': item.server_username,
-        'server_password': item.server_password,
-        'server_name': item.server_name,
-        'core': item.core,
-        'ram': item.ram,
-        'hdd': item.hdd,
-        'ports': item.ports,
-        'location': item.location,
-        'applications': item.applications,
-        'db_name': item.db_name,
-        'db_password': item.db_password,
-        'db_port': item.db_port,
-        'dump_location': item.dump_location,
-        'crontab_config': item.crontab_config,
-        'backup_location': item.backup_location,
-        'url': item.url,
-        'login_name': item.login_name,
-        'login_password': item.login_password
-    }), 200
+        'public_ip': item.public_ip, 'private_ip': item.private_ip, 'os_type': item.os_type,
+        'root_username': item.root_username, 'root_password': item.root_password,
+        'server_username': item.server_username, 'server_password': item.server_password,
+        'server_name': item.server_name, 'core': item.core, 'ram': item.ram,
+        'hdd': item.hdd, 'ports': item.ports, 'location': item.location,
+        'applications': item.applications, 'db_name': item.db_name, 'db_password': item.db_password,
+        'db_port': item.db_port, 'dump_location': item.dump_location,
+        'crontab_config': item.crontab_config, 'backup_location': item.backup_location,
+        'url': item.url, 'login_name': item.login_name, 'login_password': item.login_password,
+        'created_at': item.created_at.isoformat(),
+    }
+    return jsonify(item_data), 200
 
 # --- Update an item ---
 @items_bp.route('/update/<int:item_id>', methods=['PUT'])
@@ -323,23 +258,7 @@ def update_item(item_id):
 
     data = request.get_json()
     
-    item.project_name = data.get('project_name', item.project_name)
-    item.form_name = data.get('form_name', item.form_name)
-    item.description = data.get('description', item.description) # description is now nullable
-    
-    start_date_str = data.get('start_date')
-    item.start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
-    
-    expected_completion_date_str = data.get('expected_completion_date')
-    item.expected_completion_date = datetime.strptime(expected_completion_date_str, '%Y-%m-%d').date() if expected_completion_date_str else None
-    
-    actual_completion_date_str = data.get('actual_completion_date')
-    item.actual_completion_date = datetime.strptime(actual_completion_date_str, '%Y-%m-%d').date() if actual_completion_date_str else None
-    
-    item.status = data.get('status', item.status) # Status is now nullable
-    item.reason_for_delay = data.get('reason_for_delay', item.reason_for_delay) # reason_for_delay is now nullable
-
-    # NEW FIELDS UPDATE
+    # Update all fields based on payload, using existing value as fallback
     item.customer = data.get('customer', item.customer)
     item.public_ip = data.get('public_ip', item.public_ip)
     item.private_ip = data.get('private_ip', item.private_ip)
@@ -349,7 +268,7 @@ def update_item(item_id):
     item.server_username = data.get('server_username', item.server_username)
     item.server_password = data.get('server_password', item.server_password)
     item.server_name = data.get('server_name', item.server_name)
-    item.core = int(data.get('core', item.core)) if data.get('core') else item.core # Convert to int
+    item.core = int(data.get('core')) if data.get('core') is not None else item.core
     item.ram = data.get('ram', item.ram)
     item.hdd = data.get('hdd', item.hdd)
     item.ports = data.get('ports', item.ports)
@@ -357,7 +276,7 @@ def update_item(item_id):
     item.applications = data.get('applications', item.applications)
     item.db_name = data.get('db_name', item.db_name)
     item.db_password = data.get('db_password', item.db_password)
-    item.db_port = int(data.get('db_port', item.db_port)) if data.get('db_port') else item.db_port # Convert to int
+    item.db_port = int(data.get('db_port')) if data.get('db_port') is not None else item.db_port
     item.dump_location = data.get('dump_location', item.dump_location)
     item.crontab_config = data.get('crontab_config', item.crontab_config)
     item.backup_location = data.get('backup_location', item.backup_location)
@@ -366,14 +285,20 @@ def update_item(item_id):
     item.login_password = data.get('login_password', item.login_password)
 
 
-    # Basic validation for REQUIRED fields on update (adjust based on your needs)
-    # Validation must match model's nullable status
-    if not all([item.project_name, item.form_name, item.customer, item.server_name]):
-        return jsonify({'message': 'Project Name, Form Name, Customer, and Server Name are required!'}), 400
+    # Basic validation for ALL mandatory fields on update (matching models.py)
+    required_fields_on_update = [
+        item.customer, item.server_name, 
+        item.public_ip, item.private_ip, item.os_type, item.root_username, item.root_password,
+        item.server_username, item.server_password,
+        item.core, item.ram, item.hdd, item.ports, item.location, item.applications, item.db_name, item.db_password, item.db_port,
+        item.dump_location, item.crontab_config, item.backup_location, item.url, item.login_name, item.login_password
+    ]
+    if not all(required_fields_on_update):
+        return jsonify({'message': 'All mandatory fields must be filled.'}), 400
 
     try:
         db.session.commit()
-        print(f"DEBUG: UPDATE_ITEM - Item '{item.project_name}' with ID: {item.id} updated successfully.")
+        print(f"DEBUG: UPDATE_ITEM - Item '{item.customer}' with ID: {item.id} updated successfully.")
         return jsonify({'message': 'Item updated successfully!'}), 200
     except Exception as e:
         db.session.rollback()
@@ -393,7 +318,7 @@ def delete_item(item_id):
     try:
         db.session.delete(item)
         db.session.commit()
-        print(f"DEBUG: DELETE_ITEM - Item '{item.project_name}' with ID: {item.id} deleted successfully.")
+        print(f"DEBUG: DELETE_ITEM - Item '{item.customer}' with ID: {item.id} deleted successfully.")
         return jsonify({'message': 'Item deleted successfully!'}), 200
     except Exception as e:
         db.session.rollback()
