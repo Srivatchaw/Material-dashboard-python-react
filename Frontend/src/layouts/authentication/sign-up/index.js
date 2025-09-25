@@ -29,6 +29,7 @@ function Cover() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarColor, setSnackbarColor] = useState("error");
+  const [errors, setErrors] = useState({}); // <--- ADDED for inline errors
   const navigate = useNavigate();
 
   const openSnackbar = (message, color) => {
@@ -41,37 +42,65 @@ function Cover() {
 
   // Email validation regex (simple, for basic check)
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isPasswordStrong = (password) => password.length >= 6; // Example: Minimum password length
+
+  // --- Individual Field Validation Function for Sign-up ---
+  const validateField = (fieldName, value) => {
+    let errorMessage = "";
+
+    switch (fieldName) {
+      case "username":
+        if (!value.trim()) errorMessage = "Username cannot be empty.";
+        break;
+      case "email":
+        if (!value.trim()) errorMessage = "Email cannot be empty.";
+        else if (!isValidEmail(value)) errorMessage = "Please enter a valid email address.";
+        break;
+      case "password":
+        if (!value.trim()) errorMessage = "Password cannot be empty.";
+        else if (!isPasswordStrong(value))
+          errorMessage = "Password must be at least 6 characters long.";
+        break;
+      case "termsAccepted":
+        if (!value) errorMessage = "You must accept the Terms and Conditions to register.";
+        break;
+      default:
+        break;
+    }
+    return errorMessage;
+  };
+
+  const handleBlur = (fieldName, value) => {
+    const errorMessage = validateField(fieldName, value);
+    setErrors((prev) => ({ ...prev, [fieldName]: errorMessage }));
+  };
+
+  const validateAllFormFields = () => {
+    let newErrors = {};
+    let formIsValid = true;
+
+    // Validate all fields
+    const fieldsToValidate = { username, email, password, termsAccepted };
+    for (const fieldName in fieldsToValidate) {
+      const errorMessage = validateField(fieldName, fieldsToValidate[fieldName]);
+      if (errorMessage) {
+        newErrors[fieldName] = errorMessage;
+        formIsValid = false;
+      }
+    }
+    setErrors(newErrors);
+    return formIsValid;
+  };
+  // --- End Validation Functions ---
 
   const handleSignUp = async (event) => {
     event.preventDefault();
 
-    // --- Frontend Validation ---
-    if (!username.trim()) {
-      openSnackbar("Username cannot be empty.", "error");
+    if (!validateAllFormFields()) {
+      // <--- Use full validation here
+      openSnackbar("Please address these errors first.", "error");
       return;
     }
-    if (!email.trim()) {
-      openSnackbar("Email cannot be empty.", "error");
-      return;
-    }
-    if (!isValidEmail(email)) {
-      openSnackbar("Please enter a valid email address.", "error");
-      return;
-    }
-    if (!password.trim()) {
-      openSnackbar("Password cannot be empty.", "error");
-      return;
-    }
-    if (password.length < 6) {
-      // Example: Minimum password length
-      openSnackbar("Password must be at least 6 characters long.", "error");
-      return;
-    }
-    if (!termsAccepted) {
-      openSnackbar("You must accept the Terms and Conditions to register.", "error");
-      return;
-    }
-    // --- End Frontend Validation ---
 
     try {
       const response = await axios.post("http://127.0.0.1:5000/api/auth/signup", {
@@ -85,13 +114,10 @@ function Cover() {
       }, 2000);
     } catch (error) {
       if (error.response) {
-        // Backend returned an error response (e.g., 400, 409, 500)
         openSnackbar(`Error: ${error.response.data.message}`, "error");
       } else if (error.request) {
-        // The request was made but no response was received (e.g., network error)
         openSnackbar("Error: No response from server. Check if the backend is running.", "error");
       } else {
-        // Something happened in setting up the request that triggered an Error
         openSnackbar("An unexpected error occurred during signup.", "error");
       }
       console.error("Signup error:", error);
@@ -129,8 +155,14 @@ function Cover() {
                 fullWidth
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                error={!username.trim() && snackbarOpen && snackbarMessage.includes("Username")} // Highlight if empty and snackbar is open
+                onBlur={(e) => handleBlur("username", e.target.value)} // <--- ADD onBlur
+                error={!!errors.username} // <--- Display error
               />
+              {errors.username && (
+                <MDTypography variant="caption" color="error" display="block">
+                  {errors.username}
+                </MDTypography>
+              )}
             </MDBox>
             <MDBox mb={2}>
               <MDInput
@@ -140,12 +172,14 @@ function Cover() {
                 fullWidth
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                error={
-                  (!email.trim() || (email.trim() && !isValidEmail(email))) &&
-                  snackbarOpen &&
-                  snackbarMessage.includes("Email")
-                } // Highlight if empty or invalid
+                onBlur={(e) => handleBlur("email", e.target.value)} // <--- ADD onBlur
+                error={!!errors.email} // <--- Display error
               />
+              {errors.email && (
+                <MDTypography variant="caption" color="error" display="block">
+                  {errors.email}
+                </MDTypography>
+              )}
             </MDBox>
             <MDBox mb={2}>
               <MDInput
@@ -155,21 +189,26 @@ function Cover() {
                 fullWidth
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                error={
-                  (!password.trim() || (password.trim() && password.length < 6)) &&
-                  snackbarOpen &&
-                  snackbarMessage.includes("Password")
-                } // Highlight if empty or too short
+                onBlur={(e) => handleBlur("password", e.target.value)} // <--- ADD onBlur
+                error={!!errors.password} // <--- Display error
               />
+              {errors.password && (
+                <MDTypography variant="caption" color="error" display="block">
+                  {errors.password}
+                </MDTypography>
+              )}
             </MDBox>
             <MDBox display="flex" alignItems="center" ml={-1}>
               <FormControlLabel
                 control={
                   <Checkbox
                     checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    // Highlight if not accepted and snackbar is open for terms
-                    error={!termsAccepted && snackbarOpen && snackbarMessage.includes("Terms")}
+                    onChange={(e) => {
+                      setTermsAccepted(e.target.checked);
+                      // Also validate on change for immediate feedback
+                      handleBlur("termsAccepted", e.target.checked);
+                    }}
+                    error={!!errors.termsAccepted} // <--- Display error
                   />
                 }
                 label={
@@ -193,6 +232,11 @@ function Cover() {
                   </MDTypography>
                 }
               />
+              {errors.termsAccepted && (
+                <MDTypography variant="caption" color="error" display="block">
+                  {errors.termsAccepted}
+                </MDTypography>
+              )}
             </MDBox>
             <MDBox mt={4} mb={1}>
               <MDButton variant="gradient" color="info" fullWidth type="submit">

@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import PropTypes from "prop-types"; // Ensure this is imported
+import PropTypes from "prop-types";
 
 // @mui material components
 import Card from "@mui/material/Card";
-import Switch from "@mui/material/Switch";
+// import Switch from "@mui/material/Switch"; // Not needed
+import Icon from "@mui/material/Icon"; // Ensure Icon is imported for any potential usage
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
-import MDSnackbar from "components/MDSnackbar"; // For showing alerts
+import MDSnackbar from "components/MDSnackbar";
 
 // Authentication layout components
 import BasicLayout from "layouts/authentication/components/BasicLayout";
@@ -24,16 +25,15 @@ import bgImage from "assets/images/bg-sign-in-basic.jpeg";
 import { useAuth } from "contexts/AuthContext";
 
 function Basic() {
-  const [rememberMe, setRememberMe] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarColor, setSnackbarColor] = useState("error");
+  const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState(""); // <--- ADDED: State for general error message
   const navigate = useNavigate();
   const { login } = useAuth();
-
-  const handleSetRememberMe = () => setRememberMe(!rememberMe);
 
   const openSnackbar = (message, color) => {
     setSnackbarMessage(message);
@@ -43,42 +43,62 @@ function Basic() {
 
   const closeSnackbar = () => setSnackbarOpen(false);
 
-  const handleSignIn = async (event) => {
-    event.preventDefault();
+  const validateField = (fieldName, value) => {
+    let errorMessage = "";
+    if (!value.trim()) {
+      errorMessage = `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} cannot be empty.`;
+    }
+    return errorMessage;
+  };
 
-    // --- Frontend Validation ---
+  const handleBlur = (fieldName, value) => {
+    const errorMessage = validateField(fieldName, value);
+    setErrors((prev) => ({ ...prev, [fieldName]: errorMessage }));
+  };
+
+  const validateAllFormFields = () => {
+    let newErrors = {};
+    let formIsValid = true;
+
     if (!username.trim()) {
-      openSnackbar("Username cannot be empty.", "error");
-      return;
+      newErrors.username = "Username cannot be empty.";
+      formIsValid = false;
     }
     if (!password.trim()) {
-      openSnackbar("Password cannot be empty.", "error");
+      newErrors.password = "Password cannot be empty.";
+      formIsValid = false;
+    }
+    setErrors(newErrors);
+    return formIsValid;
+  };
+
+  const handleSignIn = async (event) => {
+    event.preventDefault();
+    setGeneralError(""); // <--- Clear previous general errors on new attempt
+
+    if (!validateAllFormFields()) {
+      // If client-side validation fails for empty fields, show a general message or first error
+      const firstError = Object.values(errors).find((msg) => msg);
+      setGeneralError(firstError || "Please fill in all required fields.");
       return;
     }
-    // You could add more complex password validation here if desired,
-    // but typically for sign-in, it's just checking if it's not empty.
-    // --- End Frontend Validation ---
 
     try {
       const response = await axios.post("http://127.0.0.1:5000/api/auth/signin", {
         username,
         password,
       });
-      openSnackbar(response.data.message, "success");
+      // openSnackbar(response.data.message, "success"); // Removed snackbar for success on signin
       login(response.data);
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2000);
+      navigate("/dashboard"); // Navigate immediately on success as per image example
     } catch (error) {
       if (error.response) {
-        // Backend returned an error response (e.g., 400 for missing fields, 401 for invalid credentials)
-        openSnackbar(`Error: ${error.response.data.message}`, "error");
+        // Backend returned an error response (e.g., 401 for invalid credentials)
+        setGeneralError(error.response.data.message || "Invalid username or password."); // <--- Set general error
       } else if (error.request) {
-        // The request was made but no response was received (e.g., network error)
-        openSnackbar("Error: No response from server. Check if the backend is running.", "error");
+        setGeneralError("No response from server. Check if the backend is running."); // <--- Set general error
       } else {
-        // Something happened in setting up the request that triggered an Error
-        openSnackbar("An unexpected error occurred during signin.", "error");
+        setGeneralError("An unexpected error occurred during signin."); // <--- Set general error
       }
       console.error("Signin error:", error);
     }
@@ -114,8 +134,14 @@ function Basic() {
                 fullWidth
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                error={!username.trim() && snackbarOpen && snackbarMessage.includes("Username")} // Highlight if empty and snackbar is open
+                onBlur={(e) => handleBlur("username", e.target.value)}
+                error={!!errors.username}
               />
+              {errors.username && (
+                <MDTypography variant="caption" color="error" display="block">
+                  {errors.username}
+                </MDTypography>
+              )}
             </MDBox>
             <MDBox mb={2}>
               <MDInput
@@ -124,21 +150,26 @@ function Basic() {
                 fullWidth
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                error={!password.trim() && snackbarOpen && snackbarMessage.includes("Password")} // Highlight if empty and snackbar is open
+                onBlur={(e) => handleBlur("password", e.target.value)}
+                error={!!errors.password}
               />
+              {errors.password && (
+                <MDTypography variant="caption" color="error" display="block">
+                  {errors.password}
+                </MDTypography>
+              )}
             </MDBox>
-            <MDBox display="flex" alignItems="center" ml={-1}>
-              <Switch checked={rememberMe} onChange={handleSetRememberMe} />
-              <MDTypography
-                variant="button"
-                fontWeight="regular"
-                color="text"
-                onClick={handleSetRememberMe}
-                sx={{ cursor: "pointer", userSelect: "none", ml: -1 }}
-              >
-                &nbsp;&nbsp;Remember me
-              </MDTypography>
-            </MDBox>
+
+            {/* --- NEW: Simple Error Message Display above the button --- */}
+            {generalError && (
+              <MDBox mb={2} textAlign="center">
+                <MDTypography variant="button" color="error" fontWeight="medium">
+                  {generalError}
+                </MDTypography>
+              </MDBox>
+            )}
+            {/* --- END NEW: Simple Error Message Display --- */}
+
             <MDBox mt={4} mb={1}>
               <MDButton variant="gradient" color="info" fullWidth type="submit">
                 sign in
@@ -163,7 +194,8 @@ function Basic() {
         </MDBox>
       </Card>
 
-      <MDSnackbar
+      {/* MDSnackbar can still be used for other alerts if needed, but not for sign-in errors directly */}
+      {/* <MDSnackbar
         color={snackbarColor}
         icon={snackbarColor === "success" ? "check" : "warning"}
         title="Alert"
@@ -178,7 +210,7 @@ function Basic() {
         bgWhite
       >
         {snackbarMessage}
-      </MDSnackbar>
+      </MDSnackbar> */}
     </BasicLayout>
   );
 }
