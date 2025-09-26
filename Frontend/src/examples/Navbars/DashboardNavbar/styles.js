@@ -1,134 +1,103 @@
-/**
-=========================================================
-* Material Dashboard 2 React - v2.2.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
 function navbar(theme, ownerState) {
-  const { palette, boxShadows, functions, transitions, breakpoints, borders } = theme;
+  const { palette, boxShadows, transitions, functions } = theme;
   const { transparentNavbar, absolute, light, darkMode } = ownerState;
 
-  const { dark, white, text, transparent, background } = palette;
+  const { dark, white, text, transparent, gradients } = palette;
   const { navbarBoxShadow } = boxShadows;
   const { rgba, pxToRem } = functions;
-  const { borderRadius } = borders;
 
   return {
     boxShadow: transparentNavbar || absolute ? "none" : navbarBoxShadow,
     backdropFilter: transparentNavbar || absolute ? "none" : `saturate(200%) blur(${pxToRem(30)})`,
     backgroundColor:
       transparentNavbar || absolute
-        ? `${transparent.main} !important`
-        : rgba(darkMode ? background.default : white.main, 0.8),
-
+        ? transparent.main
+        : rgba(darkMode ? dark.main : white.main, 0.8),
     color: () => {
-      let color;
+      let colorValue = light || darkMode ? white.main : dark.main;
 
-      if (light) {
-        color = white.main;
-      } else if (transparentNavbar) {
-        color = text.main;
-      } else {
-        color = dark.main;
+      if (transparentNavbar && !light) {
+        colorValue = darkMode ? rgba(text.main, 0.6) : text.main;
       }
 
-      return color;
+      return colorValue;
     },
-    top: absolute ? 0 : pxToRem(12),
-    minHeight: pxToRem(75),
-    display: "grid",
+    // NEW: Ensure zIndex is high enough to be on top
+    zIndex: theme.zIndex.appBar + 1, // Add zIndex
+    minHeight: pxToRem(65), // Default height, adjust as needed
+
+    // For fixed position, ensure it spans full width
+    width: "100%",
+    top: 0,
+    left: 0,
+    right: 0,
+  };
+}
+
+function navbarContainer(theme) {
+  const { pxToRem } = theme.functions;
+
+  return {
+    flexGrow: 1,
+    justifyContent: "space-between",
     alignItems: "center",
-    borderRadius: borderRadius.xl,
-    paddingTop: pxToRem(8),
-    paddingBottom: pxToRem(8),
-    paddingRight: absolute ? pxToRem(8) : 0,
-    paddingLeft: absolute ? pxToRem(16) : 0,
-
-    "& > *": {
-      transition: transitions.create("all", {
-        easing: transitions.easing.easeInOut,
-        duration: transitions.duration.standard,
-      }),
-    },
-
-    "& .MuiToolbar-root": {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-
-      [breakpoints.up("sm")]: {
-        minHeight: "auto",
-        padding: `${pxToRem(4)} ${pxToRem(16)}`,
-      },
+    minHeight: pxToRem(65), // Consistent height
+    [theme.breakpoints.up("md")]: {
+      paddingRight: pxToRem(24),
+      paddingLeft: pxToRem(24),
     },
   };
 }
 
-const navbarContainer = ({ breakpoints }) => ({
-  flexDirection: "column",
-  alignItems: "flex-start",
-  justifyContent: "space-between",
-  pt: 0.5,
-  pb: 0.5,
+function navbarRow(theme, ownerState) {
+  const { pxToRem } = theme.functions;
+  const { isMini } = ownerState;
 
-  [breakpoints.up("md")]: {
-    flexDirection: "row",
+  return {
+    display: "flex",
     alignItems: "center",
-    paddingTop: "0",
-    paddingBottom: "0",
-  },
-});
+    justifyContent: "space-between",
+    width: "100%", // Take full width
 
-const navbarRow = ({ breakpoints }, { isMini }) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  width: "100%",
-
-  [breakpoints.up("md")]: {
-    justifyContent: isMini ? "space-between" : "stretch",
-    width: isMini ? "100%" : "max-content",
-  },
-
-  [breakpoints.up("xl")]: {
-    justifyContent: "stretch !important",
-    width: "max-content !important",
-  },
-});
-
-const navbarIconButton = ({ typography: { size }, breakpoints }) => ({
-  px: 1,
-
-  "& .material-icons, .material-icons-round": {
-    fontSize: `${size.xl} !important`,
-  },
-
-  "& .MuiTypography-root": {
-    display: "none",
-
-    [breakpoints.up("sm")]: {
-      display: "inline-block",
-      lineHeight: 1.2,
-      ml: 0.5,
+    [theme.breakpoints.up("md")]: {
+      paddingRight: pxToRem(8),
+      // Removed isMini specific padding
+      // justifyContent: isMini ? "space-between" : "stretch",
     },
-  },
-});
 
-const navbarMobileMenu = ({ breakpoints }) => ({
-  display: "inline-block",
-  lineHeight: 0,
+    "& .MuiBox-root": {
+      // Apply to MDBox inside
+      display: "flex",
+      alignItems: "center",
+    },
+  };
+}
 
-  [breakpoints.up("xl")]: {
-    display: "none",
-  },
-});
+function navbarIconButton(theme) {
+  const { pxToRem } = theme.functions;
+
+  return {
+    padding: pxToRem(8),
+    "& .MuiSvgIcon-root": {
+      fontSize: pxToRem(20),
+    },
+  };
+}
+
+function navbarMobileMenu(theme) {
+  const { pxToRem } = theme.functions;
+
+  return {
+    display: "inline-block",
+    lineHeight: 0,
+    [theme.breakpoints.up("xl")]: {
+      display: "none",
+    },
+    "& .MuiSvgIcon-root": {
+      fontSize: pxToRem(28),
+      marginRight: pxToRem(4),
+    },
+  };
+}
 
 export { navbar, navbarContainer, navbarRow, navbarIconButton, navbarMobileMenu };

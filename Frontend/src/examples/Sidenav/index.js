@@ -1,18 +1,19 @@
-// src/examples/Sidenav/index.js
-import { useEffect } from "react";
-import { useLocation, NavLink, useNavigate } from "react-router-dom"; // Import useNavigate
-import PropTypes from "prop-types"; // Import PropTypes
+import React, { useState, useEffect } from "react";
+import { useLocation, NavLink, useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 
 // @mui material components
 import List from "@mui/material/List";
 import Divider from "@mui/material/Divider";
 import Link from "@mui/material/Link";
 import Icon from "@mui/material/Icon";
+// import InputAdornment from "@mui/material/InputAdornment"; // <--- REMOVE THIS IMPORT
+// import IconButton from "@mui/material/IconButton"; // <--- REMOVE THIS IMPORT
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
-// import MDButton from "components/MDButton"; // MDButton might not be needed if using SidenavCollapse
+// import MDInput from "components/MDInput"; // <--- REMOVE THIS IMPORT
 
 // Material Dashboard 2 React example components
 import SidenavCollapse from "examples/Sidenav/SidenavCollapse";
@@ -30,59 +31,57 @@ import {
 } from "context";
 
 // Auth Context
-import { useAuth } from "contexts/AuthContext"; // Import useAuth
+import { useAuth } from "contexts/AuthContext";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav, transparentSidenav, whiteSidenav, darkMode } = controller;
+  const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
   const location = useLocation();
-  const navigate = useNavigate(); // Initialize useNavigate
-  const { isAuthenticated, logout, user } = useAuth(); // Get auth state and logout function
+  const navigate = useNavigate();
+  const { isAuthenticated, logout, user } = useAuth();
+
   const collapseName = location.pathname.replace("/", "");
 
   const closeSidenav = () => setMiniSidenav(dispatch, true);
 
+  // --- REMOVED SEARCH-RELATED STATES AND HANDLERS ---
+  // const [showSearchInput, setShowSearchInput] = useState(false);
+  // const [searchTerm, setSearchTerm] = useState("");
+  // const handleToggleSearchInput = () => { /* ... */ };
+  // --- END REMOVED SEARCH ---
+
   useEffect(() => {
-    // A function that sets the display state of the sidenav's mini mode.
     function handleMiniSidenav() {
       setMiniSidenav(dispatch, window.innerWidth < 1200);
       setTransparentSidenav(dispatch, window.innerWidth < 1200 ? false : transparentSidenav);
       setWhiteSidenav(dispatch, window.innerWidth < 1200 ? false : whiteSidenav);
     }
 
-    /**
-     * The event listener that's calling the handleMiniSidenav function when resizing the window.
-     */
     window.addEventListener("resize", handleMiniSidenav);
-
-    // Call the handleMiniSidenav function to set the state with the initial value.
     handleMiniSidenav();
 
-    // Remove event listener on cleanup
     return () => window.removeEventListener("resize", handleMiniSidenav);
   }, [dispatch, transparentSidenav, whiteSidenav]);
 
-  // Handle Logout button click
-  const handleLogoutClick = (event) => {
-    event.preventDefault(); // Prevent default link navigation
-    logout(); // Call the logout function from AuthContext
-    navigate("/authentication/sign-in"); // Redirect to sign-in page after logout
+  const handleLogoutClick = () => {
+    logout();
+    navigate("/authentication/sign-in");
   };
 
-  // Render all the routes from the routes.js (or getRoutes() in this case)
   const renderRoutes = routes.map(
     ({ type, name, icon, title, noCollapse, key, href, route, onClick }) => {
       let returnValue;
 
       if (type === "collapse") {
-        // Check if it's the Logout button to assign onClick handler
         if (key === "logout" && isAuthenticated) {
-          // This is the custom Logout entry, use custom click handler
           returnValue = (
             <Link
-              href={route} // The route defined in routes.js
+              href={route}
               key={key}
-              onClick={handleLogoutClick} // Assign custom handler
+              onClick={(e) => {
+                e.preventDefault();
+                handleLogoutClick();
+              }}
               sx={{ textDecoration: "none" }}
             >
               <SidenavCollapse
@@ -92,6 +91,18 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
                 noCollapse={noCollapse}
               />
             </Link>
+          );
+        } else if ((key === "sign-in" || key === "sign-up") && !isAuthenticated) {
+          returnValue = (
+            <NavLink key={key} to={route}>
+              <SidenavCollapse name={name} icon={icon} active={key === collapseName} />
+            </NavLink>
+          );
+        } else if (isAuthenticated && key !== "sign-in" && key !== "sign-up" && key !== "logout") {
+          returnValue = (
+            <NavLink key={key} to={route}>
+              <SidenavCollapse name={name} icon={icon} active={key === collapseName} />
+            </NavLink>
           );
         } else if (href) {
           returnValue = (
@@ -110,10 +121,12 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               />
             </Link>
           );
-        } else {
+        }
+      } else if (type === "route") {
+        if (key === "create-item" && isAuthenticated) {
           returnValue = (
             <NavLink key={key} to={route}>
-              <SidenavCollapse name={name} icon={icon} active={key === collapseName} />
+              <SidenavCollapse name={name} icon={<Icon>add</Icon>} active={key === collapseName} />
             </NavLink>
           );
         }
@@ -188,22 +201,52 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           (darkMode && !transparentSidenav && whiteSidenav)
         }
       />
+
+      {/* --- REMOVED SEARCH ICON AND CONDITIONAL INPUT --- */}
+      {/* <MDBox px={3} pt={2} pb={1}>
+        <MDBox display="flex" alignItems="center" justifyContent={showSearchInput ? "flex-start" : "flex-end"}>
+          {!showSearchInput && (
+            <IconButton sx={{ cursor: "pointer" }} onClick={handleToggleSearchInput}>
+              <Icon>search</Icon>
+            </IconButton>
+          )}
+          {showSearchInput && (
+            <MDInput
+              type="text"
+              label="Search here..."
+              fullWidth
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleToggleSearchInput} size="small">
+                      <Icon>close</Icon>
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          )}
+        </MDBox>
+      </MDBox>
+      <Divider
+        light={
+          (!darkMode && !whiteSidenav && !transparentSidenav) ||
+          (darkMode && !transparentSidenav && whiteSidenav)
+        }
+      /> */}
+      {/* --- END REMOVED SEARCH --- */}
+
       <List>{renderRoutes}</List>
-      {/* Display logged-in user's name if authenticated */}
-      <MDBox p={2} mt="auto">
-        {isAuthenticated && user && (
-          <MDTypography
-            variant="caption"
-            color="text"
-            fontWeight="medium"
-            display="block"
-            mb={1}
-            ml={1}
-          >
+
+      {isAuthenticated && user && (
+        <MDBox p={2} mt="auto" textAlign="center">
+          <MDTypography variant="caption" color="text" fontWeight="medium" display="block">
             Logged in as: {user.username}
           </MDTypography>
-        )}
-      </MDBox>
+        </MDBox>
+      )}
     </SidenavRoot>
   );
 }
@@ -219,7 +262,7 @@ Sidenav.propTypes = {
   color: PropTypes.oneOf(["primary", "secondary", "info", "success", "warning", "error", "dark"]),
   brand: PropTypes.string,
   brandName: PropTypes.string.isRequired,
-  routes: PropTypes.arrayOf(PropTypes.object).isRequired, // Add this prop-types validation
+  routes: PropTypes.arrayOf(PropTypes.object).isRequired,
 };
 
 export default Sidenav;

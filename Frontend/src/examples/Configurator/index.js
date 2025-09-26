@@ -1,22 +1,4 @@
-/**
-=========================================================
-* Material Dashboard 2 React - v2.2.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
-import React, { useState, useEffect } from "react"; // <--- Ensure React, useState, useEffect are imported
-
-// react-github-btn (this might not be needed if GitHubButton is removed)
-// import GitHubButton from "react-github-btn"; // <--- REMOVE THIS IF NOT USED
+import React, { useState, useEffect } from "react";
 
 // @mui material components
 import Divider from "@mui/material/Divider";
@@ -24,10 +6,11 @@ import Switch from "@mui/material/Switch";
 import IconButton from "@mui/material/IconButton";
 import Link from "@mui/material/Link";
 import Icon from "@mui/material/Icon";
+import PropTypes from "prop-types"; // <--- Ensure PropTypes is imported
 
 // @mui icons
-// import TwitterIcon from "@mui/icons-material/Twitter"; // <--- REMOVE IF NOT USED
-// import FacebookIcon from "@mui/icons-material/Facebook"; // <--- REMOVE IF NOT USED
+import TwitterIcon from "@mui/icons-material/Twitter";
+import FacebookIcon from "@mui/icons-material/Facebook";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -41,50 +24,40 @@ import ConfiguratorRoot from "examples/Configurator/ConfiguratorRoot";
 import {
   useMaterialUIController,
   setOpenConfigurator,
-  setMiniSidenav, // <--- Ensure miniSidenav setter is here if needed
+  setMiniSidenav,
   setFixedNavbar,
   setTransparentSidenav,
   setWhiteSidenav,
   setDarkMode,
-  setSidenavColor, // <--- Ensure setSidenavColor setter is here if needed
+  setSidenavColor,
 } from "context";
 
-function Configurator() {
+function Configurator({ openConfigurator }) {
+  // <--- MODIFIED: Receive openConfigurator as a prop
   const [controller, dispatch] = useMaterialUIController();
   const {
-    openConfigurator,
-    miniSidenav, // <--- Ensure miniSidenav is destructured
+    // openConfigurator, // <--- REMOVED: Now received as a prop
+    miniSidenav,
     fixedNavbar,
     sidenavColor,
     transparentSidenav,
     whiteSidenav,
     darkMode,
   } = controller;
-  const [disabled, setDisabled] = useState(false); // <--- useState is used here
+  const [disabled, setDisabled] = useState(false);
   const sidenavColors = ["primary", "dark", "info", "success", "warning", "error"];
 
-  // Use the useEffect hook to change the button state for the sidenav type based on window size.
   useEffect(() => {
-    // <--- useEffect is used here
-    // A function that sets the disabled state of the buttons for the sidenav type.
     function handleDisabled() {
-      // This logic will be simpler if miniSidenav is handled in App.js directly or removed.
-      // For now, let's just make sure it doesn't cause errors.
       return window.innerWidth > 1200 ? setDisabled(false) : setDisabled(true);
     }
-
-    // The event listener that's calling the handleDisabled function when resizing the window.
     window.addEventListener("resize", handleDisabled);
-
-    // Call the handleDisabled function to set the state with the initial value.
     handleDisabled();
-
-    // Remove event listener on cleanup
     return () => window.removeEventListener("resize", handleDisabled);
-  }, [fixedNavbar]); // Fixed dependency: use fixedNavbar if that's what controls 'disabled'
+  }, [fixedNavbar]);
 
   const handleCloseConfigurator = () => setOpenConfigurator(dispatch, false);
-  const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav); // Ensure this is available from context
+  const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
   const handleTransparentSidenav = () => {
     setTransparentSidenav(dispatch, true);
     setWhiteSidenav(dispatch, false);
@@ -100,7 +73,6 @@ function Configurator() {
   const handleFixedNavbar = () => setFixedNavbar(dispatch, !fixedNavbar);
   const handleDarkMode = () => setDarkMode(dispatch, !darkMode);
 
-  // sidenav type buttons styles
   const sidenavTypeButtonsStyles = ({
     functions: { pxToRem },
     palette: { white, dark, background },
@@ -118,7 +90,6 @@ function Configurator() {
     },
   });
 
-  // sidenav type active button styles
   const sidenavTypeActiveButtonStyles = ({
     functions: { pxToRem, linearGradient },
     palette: { white, gradients, background },
@@ -291,81 +262,14 @@ function Configurator() {
           <Switch checked={darkMode} onChange={handleDarkMode} />
         </MDBox>
         <Divider />
-
-        {/* --- ALL ADVERTISING BUTTONS SECTION REMOVED --- */}
-        {/*
-        <MDBox mt={3} mb={2}>
-          <MDButton
-            component={Link}
-            href="https://www.creative-tim.com/product/material-dashboard-react"
-            target="_blank"
-            rel="noreferrer"
-            color={darkMode ? "light" : "dark"}
-            variant="gradient"
-            fullWidth
-          >
-            free download
-            &nbsp;<Icon sx={{ fontSize: "1.25rem" }}>download</Icon>
-          </MDButton>
-        </MDBox>
-        <MDBox mt={1} mb={2}>
-          <MDButton
-            component={Link}
-            href="https://www.creative-tim.com/learning-lab/react/quick-start/material-dashboard/"
-            target="_blank"
-            rel="noreferrer"
-            color={darkMode ? "light" : "dark"}
-            variant="outlined"
-            fullWidth
-          >
-            view documentation
-          </MDButton>
-        </MDBox>
-        <MDBox display="flex" justifyContent="center">
-          <GitHubButton
-            href="https://github.com/creativetimofficial/material-dashboard-react"
-            data-icon="octicon-star"
-            data-size="large"
-            data-show-count="true"
-            aria-label="Star creativetimofficial/material-dashboard-react on GitHub"
-          >
-            Star
-          </GitHubButton>
-        </MDBox>
-        <MDBox mt={2} textAlign="center">
-          <MDBox mb={0.5}>
-            <MDTypography variant="h6">Thank you for sharing!</MDTypography>
-          </MDBox>
-
-          <MDBox display="flex" justifyContent="center">
-            <MDBox mr={1.5}>
-              <MDButton
-                component={Link}
-                href="//twitter.com/intent/tweet?text=Check%20Material%20Dashboard%20React%20made%20by%20%40CreativeTim%20%23webdesign%20%23dashboard%20%23react%20%mui&url=https%3A%2F%2Fwww.creative-tim.com%2Fproduct%2Fmaterial-dashboard-react"
-                target="_blank"
-                rel="noreferrer"
-                color="dark"
-              >
-                <TwitterIcon />
-                &nbsp; Tweet
-              </MDButton>
-            </MDBox>
-            <MDButton
-              component={Link}
-              href="https://www.facebook.com/sharer/sharer.php?u=https://www.creative-tim.com/product/material-dashboard-react"
-              target="_blank"
-              rel="noreferrer"
-              color="dark"
-            >
-              <FacebookIcon />
-              &nbsp; Share
-            </MDButton>
-          </MDBox>
-        </MDBox>
-        */}
       </MDBox>
     </ConfiguratorRoot>
   );
 }
+
+// Add PropTypes for the new prop
+Configurator.propTypes = {
+  openConfigurator: PropTypes.bool.isRequired,
+};
 
 export default Configurator;

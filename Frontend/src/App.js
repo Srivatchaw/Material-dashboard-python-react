@@ -12,7 +12,7 @@ import Icon from "@mui/material/Icon";
 import MDBox from "components/MDBox";
 
 // Material Dashboard 2 React example components
-import Sidenav from "examples/Sidenav";
+// import Sidenav from "examples/Sidenav"; // Sidenav is intentionally removed in the previous step
 import Configurator from "examples/Configurator";
 
 // Material Dashboard 2 React themes
@@ -24,20 +24,22 @@ import themeDark from "assets/theme-dark";
 // RTL plugins
 import rtlPlugin from "stylis-plugin-rtl";
 import { CacheProvider } from "@emotion/react";
-import createCache from "@emotion/cache"; // CORRECT IMPORT PATH for createCache
+import createCache from "@emotion/cache";
 
 // Material Dashboard 2 React routes
 import getRoutes from "routes";
 
 // Material Dashboard 2 React contexts
-import { useMaterialUIController, setMiniSidenav, setOpenConfigurator } from "context";
+import {
+  useMaterialUIController,
+  setMiniSidenav,
+  setOpenConfigurator,
+  setTransparentSidenav,
+  setWhiteSidenav,
+} from "context";
 
-// Images (Original brand images - comment out or remove if not used elsewhere)
-// import brandWhite from "assets/images/logo-ct.png";
-// import brandDark from "assets/images/logo-ct-dark.png";
-
-// --- HERE IS WHERE YOU IMPORT YOUR CUSTOM LOGO ---
-import myCustomLogo from "assets/images/1631340580623.jpg"; // <--- THIS IS YOUR IMAGE IMPORT
+// Images (Your custom logo import)
+import myCustomLogo from "assets/images/1631340580623.jpg";
 
 // Auth Context
 import { useAuth } from "contexts/AuthContext";
@@ -71,24 +73,24 @@ export default function App() {
     setRtlCache(emotionCache);
   }, []);
 
-  // Open sidenav when mouse enter on mini sidenav
+  // Sidenav handlers are no longer directly used if Sidenav is removed from App.js JSX
   const handleOnMouseEnter = () => {
-    if (miniSidenav && !onMouseEnter) {
-      setMiniSidenav(dispatch, false);
-      setOnMouseEnter(true);
-    }
+    // if (miniSidenav && !onMouseEnter) {
+    //   setMiniSidenav(dispatch, false);
+    //   setOnMouseEnter(true);
+    // }
   };
 
-  // Close sidenav when mouse leave from mini sidenav
   const handleOnMouseLeave = () => {
-    if (onMouseEnter) {
-      setMiniSidenav(dispatch, true);
-      setOnMouseEnter(false);
-    }
+    // if (onMouseEnter) {
+    //   setMiniSidenav(dispatch, true);
+    //   setOnMouseEnter(false);
+    // }
   };
 
-  // Change the openConfigurator state
-  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
+  const handleConfiguratorOpen = () => {
+    setOpenConfigurator(dispatch, !openConfigurator);
+  };
 
   // Setting the dir attribute for the body element
   useEffect(() => {
@@ -101,7 +103,20 @@ export default function App() {
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
 
-  // Render all routes dynamically
+  // Sidenav resize effect is no longer directly needed in App.js if Sidenav component is removed
+  // useEffect(() => {
+  //   function handleMiniSidenavOnResize() {
+  //     setMiniSidenav(dispatch, window.innerWidth < 1200);
+  //     setTransparentSidenav(dispatch, window.innerWidth < 1200 ? false : transparentSidenav);
+  //     setWhiteSidenav(dispatch, window.innerWidth < 1200 ? false : whiteSidenav);
+  //   }
+  //   window.addEventListener("resize", handleMiniSidenavOnResize);
+  //   handleMiniSidenavOnResize(); // Call on mount
+  //   return () => window.removeEventListener("resize", handleMiniSidenavOnResize);
+  // }, [dispatch, transparentSidenav, whiteSidenav]);
+
+  // --- RESTORED: getRoutesComponent function definition ---
+  // This function is needed to render the Route components for React Router
   const getRoutesComponent = (allRoutes) =>
     allRoutes
       .map((route) => {
@@ -114,6 +129,7 @@ export default function App() {
         return null;
       })
       .flat(Infinity);
+  // --- END RESTORED ---
 
   const configsButton = (
     <MDBox
@@ -144,15 +160,15 @@ export default function App() {
       <CssBaseline />
       {layout === "dashboard" && (
         <>
-          <Sidenav
+          {/* <Sidenav // Sidenav component is intentionally removed from here
             color={sidenavColor}
-            brand={myCustomLogo} // <--- YOUR CUSTOM LOGO IS USED HERE
-            brandName="Paragon Dynamics" // Change this text
+            brand={myCustomLogo}
+            brandName="Paragon Dynamics"
             routes={routes}
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}
-          />
-          <Configurator />
+          /> */}
+          <Configurator openConfigurator={openConfigurator} />
           {configsButton}
         </>
       )}

@@ -1,40 +1,27 @@
-/**
-=========================================================
-* Material Dashboard 2 React - v2.2.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
 import { useEffect } from "react";
-
-// react-router-dom components
 import { useLocation } from "react-router-dom";
-
-// prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
+
+// @mui material components
+import Box from "@mui/material/Box";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 
+// Material Dashboard 2 React example components
+// import DashboardNavbar from "examples/Navbars/DashboardNavbar"; // <--- REMOVE THIS IMPORT
+
 // Material Dashboard 2 React context
-import { useMaterialUIController, setLayout } from "context";
+import { useMaterialUIController, setMiniSidenav } from "context";
 
 function DashboardLayout({ children }) {
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav } = controller;
+  // const { miniSidenav } = controller; // miniSidenav is not controlled by this component directly now
   const { pathname } = useLocation();
 
   useEffect(() => {
-    setLayout(dispatch, "dashboard");
-  }, [pathname]);
+    // setMiniSidenav(dispatch, false); // No longer needed
+  }, [dispatch, pathname]);
 
   return (
     <MDBox
@@ -42,15 +29,20 @@ function DashboardLayout({ children }) {
         p: 3,
         position: "relative",
 
-        [breakpoints.up("xl")]: {
-          marginLeft: miniSidenav ? pxToRem(120) : pxToRem(274),
-          transition: transitions.create(["margin-left", "margin-right"], {
-            easing: transitions.easing.easeInOut,
-            duration: transitions.duration.standard,
-          }),
-        },
+        // --- REMOVED SIDENAV-RELATED MARGIN STYLING ---
+        // [breakpoints.up("xl")]: {
+        //   marginLeft: miniSidenav ? pxToRem(120) : pxToRem(274),
+        //   transition: transitions.create(["margin-left", "margin-right"], {
+        //     easing: transitions.easing.easeInOut,
+        //     duration: transitions.duration.standard,
+        //   }),
+        // },
+
+        // Removed paddingTop as Navbar is also removed. Adjust if you need global spacing.
+        // paddingTop: pxToRem(70),
       })}
     >
+      {/* <DashboardNavbar /> */} {/* <--- REMOVE OR COMMENT OUT THIS LINE */}
       {children}
     </MDBox>
   );

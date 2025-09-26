@@ -429,6 +429,21 @@ function CreateItem() {
                     handleBlur("osType", e.target.value);
                   }}
                   error={!!errors.osType}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      height: "48px", // match height
+                      fontSize: "14px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "13px",
+                    },
+                    "& .MuiSelect-select": {
+                      height: "48px", // fix dropdown size
+                      display: "flex",
+                      alignItems: "center",
+                      paddingY: "12px", // adjust vertical padding
+                    },
+                  }}
                 >
                   <MenuItem value="">-- Select OS Type --</MenuItem>
                   <MenuItem value="Linux">Linux</MenuItem>
