@@ -13,12 +13,15 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import MDSnackbar from "components/MDSnackbar";
+import MDInput from "components/MDInput";
 
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -37,6 +40,8 @@ function Tables() {
   const [snackbarColor, setSnackbarColor] = useState("error");
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  const [searchTerm, setSearchTerm] = useState("");
 
   const openSnackbar = (message, color) => {
     setSnackbarMessage(message);
@@ -114,22 +119,70 @@ function Tables() {
     navigate(`/items/edit/${item.id}`); // Navigate to edit page with item ID
   };
 
+  // --- Filtered Items Logic ---
+  const filteredItems = items.filter((item) => {
+    if (!searchTerm) return true;
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+    return (
+      (item.customer && item.customer.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.server_name && item.server_name.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.public_ip && item.public_ip.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.private_ip && item.private_ip.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.os_type && item.os_type.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.root_username && item.root_username.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.server_username && item.server_username.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.location && item.location.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.applications && item.applications.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.db_name && item.db_name.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.url && item.url.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.login_name && item.login_name.toLowerCase().includes(lowerCaseSearchTerm))
+    );
+  });
+  // --- END Filtered Items Logic ---
+
   const renderItemsTable = () => (
     <Card>
       <MDBox display="flex" justifyContent="space-between" alignItems="center" p={3}>
         <MDTypography variant="h6" fontWeight="medium">
           My Items
         </MDTypography>
-        <MDButton variant="gradient" color="info" onClick={handleAddItem}>
-          <Icon>add</Icon>&nbsp;Add Item
-        </MDButton>
+        <MDBox display="flex" alignItems="center">
+          <MDBox mr={2}>
+            <MDInput
+              type="text"
+              label="Search items..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Icon>search</Icon>
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm && (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setSearchTerm("")} size="small">
+                      <Icon>close</Icon>
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </MDBox>
+          <MDButton variant="gradient" color="info" onClick={handleAddItem}>
+            <Icon>add</Icon>&nbsp;Add Item
+          </MDButton>
+        </MDBox>
       </MDBox>
       <MDBox pt={3} sx={{ overflowX: "auto" }}>
-        {" "}
-        {/* Added overflowX for horizontal scrolling */}
-        {items.length === 0 ? (
+        {filteredItems.length === 0 && searchTerm === "" ? (
           <MDTypography variant="body2" color="text" textAlign="center" p={2}>
             No items found. Click &quot;Add Item&quot; to create one.
+          </MDTypography>
+        ) : filteredItems.length === 0 && searchTerm !== "" ? (
+          <MDTypography variant="body2" color="text" textAlign="center" p={2}>
+            No items match your search term &quot;{searchTerm}&quot;.
           </MDTypography>
         ) : (
           <MDBox
@@ -169,13 +222,11 @@ function Tables() {
                     Root Username
                   </MDTypography>
                 </MDBox>
-                {/* Password fields not displayed in table for security */}
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
                     Server User
                   </MDTypography>
                 </MDBox>
-                {/* Server Password not displayed */}
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
                     Core
@@ -211,7 +262,6 @@ function Tables() {
                     DB Name
                   </MDTypography>
                 </MDBox>
-                {/* DB Password not displayed */}
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
                     DB Port
@@ -242,7 +292,6 @@ function Tables() {
                     Login Name
                   </MDTypography>
                 </MDBox>
-                {/* Login Password not displayed */}
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
                     DB Pwd Set At
@@ -261,7 +310,7 @@ function Tables() {
               </MDBox>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <MDBox component="tr" key={item.id}>
                   <MDBox component="td" p={1.5} px={3}>
                     <MDTypography variant="button" fontWeight="regular">
