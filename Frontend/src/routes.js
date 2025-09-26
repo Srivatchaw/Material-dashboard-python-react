@@ -1,4 +1,4 @@
-import Dashboard from "layouts/dashboard";
+import Dashboard from "layouts/dashboard"; // <--- ENSURE THIS LINE IS PRESENT AND UNCOMMENTED
 import Tables from "layouts/tables";
 import Billing from "layouts/billing";
 import RTL from "layouts/rtl";
@@ -8,6 +8,7 @@ import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
 import CreateItem from "layouts/items/create";
 import EditItem from "layouts/items/edit";
+import NotificationsPage from "layouts/notifications"; // <--- renamed Notifications to NotificationsPage to avoid conflict if you have a state variable named Notifications
 
 // @mui icons
 import Icon from "@mui/material/Icon";
@@ -24,26 +25,24 @@ const PrivateRoute = ({ children }) => {
 };
 PrivateRoute.propTypes = { children: PropTypes.node.isRequired };
 
-// --- Main routes definition (receives isAuthenticated and logout as arguments) ---
 const getRoutes = (isAuthenticated, logout) => {
-  // Define base routes that are always present, but may be protected
   const baseRoutes = [
     {
       type: "collapse",
       name: "Dashboard",
-      key: "dashboard", // Unique key
+      key: "dashboard",
       icon: <Icon fontSize="small">dashboard</Icon>,
       route: "/dashboard",
       component: (
         <PrivateRoute>
-          <Dashboard />
+          <Dashboard /> {/* <--- Dashboard is used here */}
         </PrivateRoute>
       ),
     },
     {
       type: "collapse",
       name: "Tables",
-      key: "tables", // Unique key
+      key: "tables",
       icon: <Icon fontSize="small">table_view</Icon>,
       route: "/tables",
       component: (
@@ -55,7 +54,7 @@ const getRoutes = (isAuthenticated, logout) => {
     {
       type: "route",
       name: "Create Item",
-      key: "create-item", // Unique key
+      key: "create-item",
       icon: <Icon fontSize="small">add</Icon>,
       route: "/items/create",
       component: (
@@ -68,7 +67,7 @@ const getRoutes = (isAuthenticated, logout) => {
     {
       type: "route",
       name: "Edit Item",
-      key: "edit-item", // Unique key
+      key: "edit-item",
       icon: <Icon fontSize="small">edit</Icon>,
       route: "/items/edit/:item_id",
       component: (
@@ -80,8 +79,21 @@ const getRoutes = (isAuthenticated, logout) => {
     },
     {
       type: "collapse",
+      name: "Notifications",
+      key: "notifications",
+      icon: <Icon fontSize="small">notifications</Icon>,
+      route: "/notifications",
+      component: (
+        <PrivateRoute>
+          <NotificationsPage /> {/* <--- Use NotificationsPage here */}
+        </PrivateRoute>
+      ),
+    },
+    // ... remaining original routes (Billing, RTL, Profile) ...
+    {
+      type: "collapse",
       name: "Billing",
-      key: "billing", // Unique key
+      key: "billing",
       icon: <Icon fontSize="small">receipt_long</Icon>,
       route: "/billing",
       component: (
@@ -93,7 +105,7 @@ const getRoutes = (isAuthenticated, logout) => {
     {
       type: "collapse",
       name: "RTL",
-      key: "rtl", // Unique key
+      key: "rtl",
       icon: <Icon fontSize="small">format_textdirection_r_to_l</Icon>,
       route: "/rtl",
       component: (
@@ -104,20 +116,8 @@ const getRoutes = (isAuthenticated, logout) => {
     },
     {
       type: "collapse",
-      name: "Notifications",
-      key: "notifications", // Unique key
-      icon: <Icon fontSize="small">notifications</Icon>,
-      route: "/notifications",
-      component: (
-        <PrivateRoute>
-          <Notifications />
-        </PrivateRoute>
-      ),
-    },
-    {
-      type: "collapse",
       name: "Profile",
-      key: "profile", // Unique key
+      key: "profile",
       icon: <Icon fontSize="small">person</Icon>,
       route: "/profile",
       component: (
@@ -133,7 +133,7 @@ const getRoutes = (isAuthenticated, logout) => {
     authRoutes.push({
       type: "collapse",
       name: "Log Out",
-      key: "logout", // Unique key
+      key: "logout",
       icon: <Icon fontSize="small">logout</Icon>,
       route: "/authentication/sign-in",
       component: <SignIn />,
@@ -144,7 +144,7 @@ const getRoutes = (isAuthenticated, logout) => {
       {
         type: "collapse",
         name: "Sign In",
-        key: "sign-in", // Unique key
+        key: "sign-in",
         icon: <Icon fontSize="small">login</Icon>,
         route: "/authentication/sign-in",
         component: <SignIn />,
@@ -152,7 +152,7 @@ const getRoutes = (isAuthenticated, logout) => {
       {
         type: "collapse",
         name: "Sign Up",
-        key: "sign-up", // Unique key
+        key: "sign-up",
         icon: <Icon fontSize="small">assignment</Icon>,
         route: "/authentication/sign-up",
         component: <SignUp />,
@@ -160,7 +160,6 @@ const getRoutes = (isAuthenticated, logout) => {
     );
   }
 
-  // Combine base routes with auth routes
   const allRoutes = [...baseRoutes, ...authRoutes];
 
   // REDIRECTION ROUTES
@@ -173,7 +172,7 @@ const getRoutes = (isAuthenticated, logout) => {
       ) : (
         <Navigate to="/authentication/sign-in" />
       ),
-      key: "root-redirect", // Unique key
+      key: "root-redirect",
     },
     {
       type: "redirect",
@@ -183,7 +182,7 @@ const getRoutes = (isAuthenticated, logout) => {
       ) : (
         <Navigate to="/authentication/sign-in" />
       ),
-      key: "auth-redirect", // Unique key
+      key: "auth-redirect",
     }
   );
 

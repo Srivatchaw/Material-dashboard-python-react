@@ -139,7 +139,6 @@ function Tables() {
           >
             <thead>
               <MDBox component="tr" bgColor="light" textAlign="left">
-                {/* REMOVED: Project Name, Form Name */}
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
                     Customer
@@ -157,20 +156,26 @@ function Tables() {
                 </MDBox>
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
+                    Private IP
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
                     OS Type
                   </MDTypography>
                 </MDBox>
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
-                    Status
+                    Root Username
                   </MDTypography>
                 </MDBox>
+                {/* Password fields not displayed in table for security */}
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
-                    Created At
+                    Server User
                   </MDTypography>
                 </MDBox>
-                {/* --- REMOVED: Start Date, Exp. Compl. Date, Act. Compl. Date --- */}
+                {/* Server Password not displayed */}
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
                     Core
@@ -198,7 +203,54 @@ function Tables() {
                 </MDBox>
                 <MDBox component="th" py={1.5} px={3}>
                   <MDTypography variant="overline" fontWeight="bold">
+                    Applications
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    DB Name
+                  </MDTypography>
+                </MDBox>
+                {/* DB Password not displayed */}
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    DB Port
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Dump Location
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Crontab Config
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Backup Location
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
                     URL
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Login Name
+                  </MDTypography>
+                </MDBox>
+                {/* Login Password not displayed */}
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    DB Pwd Set At
+                  </MDTypography>
+                </MDBox>
+                <MDBox component="th" py={1.5} px={3}>
+                  <MDTypography variant="overline" fontWeight="bold">
+                    Created At
                   </MDTypography>
                 </MDBox>
                 <MDBox component="th" py={1.5} px={3}>
@@ -211,7 +263,6 @@ function Tables() {
             <tbody>
               {items.map((item) => (
                 <MDBox component="tr" key={item.id}>
-                  {/* REMOVED: item.project_name, item.form_name */}
                   <MDBox component="td" p={1.5} px={3}>
                     <MDTypography variant="button" fontWeight="regular">
                       {item.customer}
@@ -229,20 +280,24 @@ function Tables() {
                   </MDBox>
                   <MDBox component="td" p={1.5} px={3}>
                     <MDTypography variant="button" fontWeight="regular">
+                      {item.private_ip || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
                       {item.os_type || "N/A"}
                     </MDTypography>
                   </MDBox>
                   <MDBox component="td" p={1.5} px={3}>
                     <MDTypography variant="button" fontWeight="regular">
-                      {item.status}
+                      {item.root_username || "N/A"}
                     </MDTypography>
                   </MDBox>
                   <MDBox component="td" p={1.5} px={3}>
                     <MDTypography variant="button" fontWeight="regular">
-                      {new Date(item.created_at).toLocaleDateString()}
+                      {item.server_username || "N/A"}
                     </MDTypography>
                   </MDBox>
-                  {/* --- REMOVED: item.start_date, item.expected_completion_date, item.actual_completion_date --- */}
                   <MDBox component="td" p={1.5} px={3}>
                     <MDTypography variant="button" fontWeight="regular">
                       {item.core || "N/A"}
@@ -270,7 +325,59 @@ function Tables() {
                   </MDBox>
                   <MDBox component="td" p={1.5} px={3}>
                     <MDTypography variant="button" fontWeight="regular">
+                      {item.applications || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.db_name || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.db_port || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.dump_location || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.crontab_config || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.backup_location || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
                       {item.url || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.login_name || "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.login_password ? "********" : "N/A"} {/* Hide password */}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {item.db_password_set_at
+                        ? new Date(item.db_password_set_at).toLocaleDateString()
+                        : "N/A"}
+                    </MDTypography>
+                  </MDBox>
+                  <MDBox component="td" p={1.5} px={3}>
+                    <MDTypography variant="button" fontWeight="regular">
+                      {new Date(item.created_at).toLocaleDateString()}
                     </MDTypography>
                   </MDBox>
                   <MDBox component="td" p={1.5} px={3}>
@@ -304,7 +411,7 @@ function Tables() {
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Are you sure you want to delete the item &quot;
-            {itemToDelete ? itemToDelete.project_name : ""}&quot;? This action cannot be undone.
+            {itemToDelete ? itemToDelete.server_name : ""}&quot;? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

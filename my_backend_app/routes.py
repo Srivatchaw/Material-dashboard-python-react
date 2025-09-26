@@ -1,13 +1,15 @@
+
 from flask import Blueprint, request, jsonify, g
 from .models import db, User, LoginHistory, Item
 from flask_cors import cross_origin
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import functools
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 items_bp = Blueprint('items', __name__, url_prefix='/api/items')
+notifications_bp = Blueprint('notifications', __name__, url_prefix='/api/notifications')
 
-# --- Authentication Decorator ---
+# --- Authentication Decorator (MUST BE DEFINED BEFORE USE) ---
 def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
@@ -23,6 +25,7 @@ def login_required(view):
         return view(**kwargs)
     return wrapped_view
 
+# --- Auth Endpoints (signup and signin from previous steps) ---
 @auth_bp.route('/signup', methods=['POST'])
 @cross_origin()
 def signup():
@@ -74,8 +77,6 @@ def signin():
                 login_ip=login_ip
             )
 
-            print(f"DEBUG: SIGNIN - Attempting to add LoginHistory entry: User ID={user.id}, IP={login_ip}, Time={new_login_entry.login_time}")
-
             db.session.add(new_login_entry)
             db.session.commit()
             print("DEBUG: SIGNIN - LoginHistory entry committed successfully.")
@@ -98,7 +99,6 @@ def create_item():
     print("DEBUG: CREATE_ITEM - Endpoint accessed.")
     data = request.get_json()
     
-    # Only retrieve fields that exist in the model
     customer = data.get('customer')
     public_ip = data.get('public_ip')
     private_ip = data.get('private_ip')
@@ -124,22 +124,24 @@ def create_item():
     login_name = data.get('login_name')
     login_password = data.get('login_password')
 
-    # Updated Backend validation for ALL mandatory fields (matching models.py)
-    # This list must EXACTLY match the non-nullable columns in your models.py
+    db_password_set_at_str = data.get('db_password_set_at')
+
+
     if not all([
         customer, server_name, public_ip, private_ip, os_type, root_username, root_password,
         server_username, server_password, core, ram, hdd, ports, location, applications, db_name,
-        db_password, db_port, dump_location, crontab_config, backup_location, url, login_name, login_password
+        db_password, db_port, dump_location, crontab_config, backup_location, url, login_name, login_password,
+        db_password_set_at_str
     ]):
         return jsonify({'message': 'All mandatory fields must be filled.'}), 400
 
     try:
-        # Core and DB Port must be numbers, convert them
         core_int = int(core)
         db_port_int = int(db_port)
+        db_password_set_at = datetime.strptime(db_password_set_at_str, '%Y-%m-%d').date()
     except ValueError as ve:
-        print(f"ERROR: CREATE_ITEM - Integer parsing error: {ve}")
-        return jsonify({'message': 'Core and DB Port must be numbers.'}), 400
+        print(f"ERROR: CREATE_ITEM - Integer/Date parsing error: {ve}")
+        return jsonify({'message': 'Core and DB Port must be numbers. DB Password Set At must be YYYY-MM-DD.'}), 400
 
     new_item = Item(
         user_id=g.user.id,
@@ -166,7 +168,8 @@ def create_item():
         backup_location=backup_location,
         url=url,
         login_name=login_name,
-        login_password=login_password
+        login_password=login_password,
+        db_password_set_at=db_password_set_at
     )
 
     try:
@@ -186,6 +189,7 @@ def create_item():
             'crontab_config': new_item.crontab_config, 'backup_location': new_item.backup_location,
             'url': new_item.url, 'login_name': new_item.login_name, 'login_password': new_item.login_password,
             'created_at': new_item.created_at.isoformat(),
+            'db_password_set_at': new_item.db_password_set_at.isoformat()
         }
         return jsonify({'message': 'Item created successfully!', 'item': item_data}), 201
     except Exception as e:
@@ -215,12 +219,12 @@ def get_all_items():
             'crontab_config': item.crontab_config, 'backup_location': item.backup_location,
             'url': item.url, 'login_name': item.login_name, 'login_password': item.login_password,
             'created_at': item.created_at.isoformat(),
+            'db_password_set_at': item.db_password_set_at.isoformat()
         }
         items_data.append(item_data)
     print(f"DEBUG: GET_ALL_ITEMS - Returning {len(items_data)} items for user {g.user.username}.")
     return jsonify(items_data), 200
 
-# --- Get single item by ID (for editing) ---
 @items_bp.route('/get/<int:item_id>', methods=['GET'])
 @cross_origin()
 @login_required
@@ -243,10 +247,10 @@ def get_single_item(item_id):
         'crontab_config': item.crontab_config, 'backup_location': item.backup_location,
         'url': item.url, 'login_name': item.login_name, 'login_password': item.login_password,
         'created_at': item.created_at.isoformat(),
+        'db_password_set_at': item.db_password_set_at.isoformat()
     }
     return jsonify(item_data), 200
 
-# --- Update an item ---
 @items_bp.route('/update/<int:item_id>', methods=['PUT'])
 @cross_origin()
 @login_required
@@ -258,7 +262,7 @@ def update_item(item_id):
 
     data = request.get_json()
     
-    # Update all fields based on payload, using existing value as fallback
+    # Update fields based on payload, using existing value as fallback
     item.customer = data.get('customer', item.customer)
     item.public_ip = data.get('public_ip', item.public_ip)
     item.private_ip = data.get('private_ip', item.private_ip)
@@ -284,14 +288,25 @@ def update_item(item_id):
     item.login_name = data.get('login_name', item.login_name)
     item.login_password = data.get('login_password', item.login_password)
 
+    # --- NEW: Handle db_password_set_at if db_password changes ---
+    # Check if 'db_password' is present in the incoming data AND if its value has actually changed
+    if 'db_password' in data and data['db_password'] != item.db_password:
+        item.db_password_set_at = date.today() # Update to today's date
+        print(f"DEBUG: UPDATE_ITEM - DB password changed for item {item.id}. db_password_set_at updated to {item.db_password_set_at}.")
+    elif 'db_password_set_at' in data and data['db_password_set_at'] is not None:
+        # Allow manual update of db_password_set_at if provided
+        try:
+            item.db_password_set_at = datetime.strptime(data['db_password_set_at'], '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'message': 'Invalid db_password_set_at date format. Use YYYY-MM-DD.'}), 400
 
-    # Basic validation for ALL mandatory fields on update (matching models.py)
     required_fields_on_update = [
         item.customer, item.server_name, 
         item.public_ip, item.private_ip, item.os_type, item.root_username, item.root_password,
         item.server_username, item.server_password,
         item.core, item.ram, item.hdd, item.ports, item.location, item.applications, item.db_name, item.db_password, item.db_port,
-        item.dump_location, item.crontab_config, item.backup_location, item.url, item.login_name, item.login_password
+        item.dump_location, item.crontab_config, item.backup_location, item.url, item.login_name, item.login_password,
+        item.db_password_set_at # Add this to the validation list
     ]
     if not all(required_fields_on_update):
         return jsonify({'message': 'All mandatory fields must be filled.'}), 400
@@ -305,7 +320,6 @@ def update_item(item_id):
         print(f"ERROR: UPDATE_ITEM - Failed to update item {item_id} for user {g.user.username}: {e}")
         return jsonify({'message': 'An error occurred during item update', 'error': str(e)}), 500
 
-# --- Delete an item ---
 @items_bp.route('/delete/<int:item_id>', methods=['DELETE'])
 @cross_origin()
 @login_required
@@ -324,3 +338,48 @@ def delete_item(item_id):
         db.session.rollback()
         print(f"ERROR: DELETE_ITEM - Failed to delete item {item_id} for user {g.user.username}: {e}")
         return jsonify({'message': 'An error occurred during item deletion', 'error': str(e)}), 500
+
+# --- NOTIFICATIONS ENDPOINT ---
+@notifications_bp.route('/get_reminders', methods=['GET'])
+@cross_origin()
+@login_required
+def get_password_reminders():
+    print(f"DEBUG: NOTIFICATIONS - Checking password reminders for user {g.user.username}.")
+    reminders = []
+    today = date.today()
+    
+    user_items = Item.query.filter_by(user_id=g.user.id).all()
+
+    for item in user_items:
+        if item.db_password_set_at:
+            days_since_set = (today - item.db_password_set_at).days
+            
+            if days_since_set >= (7 - 6) and days_since_set < 7:
+                reminders.append({
+                    'id': item.id,
+                    'message': f"Change DB password for server '{item.server_name}'. It expires in {90 - days_since_set} days!",
+                    'item_id': item.id,
+                    'server_name': item.server_name,
+                    'type': 'db_password_expiry',
+                    'date': today.isoformat()
+                })
+            elif days_since_set >= 90:
+                 reminders.append({
+                    'id': item.id,
+                    'message': f"DB password for server '{item.server_name}' has EXPIRED! Please change immediately.",
+                    'item_id': item.id,
+                    'server_name': item.server_name,
+                    'type': 'db_password_expired',
+                    'date': today.isoformat()
+                })
+        else: # This case should ideally not happen if db_password_set_at is nullable=False
+             reminders.append({
+                    'id': item.id,
+                    'message': f"DB password for server '{item.server_name}' has no set date. Please update password and set date.",
+                    'item_id': item.id,
+                    'server_name': item.server_name,
+                    'type': 'db_password_no_date',
+                    'date': today.isoformat()
+                })
+    print(f"DEBUG: NOTIFICATIONS - Found {len(reminders)} reminders for user {g.user.username}.")
+    return jsonify(reminders), 200

@@ -1,7 +1,7 @@
 # my_backend_app/models.py
 from flask_sqlalchemy import SQLAlchemy
 from passlib.hash import pbkdf2_sha256
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 db = SQLAlchemy()
 
@@ -30,12 +30,10 @@ class LoginHistory(db.Model):
     def __repr__(self):
         return f'<LoginHistory User:{self.user_id} Time:{self.login_time}>'
 
-# --- CORRECTED ITEM MODEL (BASED ON YOUR LATEST REQUEST TO REMOVE FIELDS AND SET MANDATORY) ---
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
-    # All fields you listed are now MANDATORY (nullable=False) as requested
     customer = db.Column(db.String(100), nullable=False)
     public_ip = db.Column(db.String(45), nullable=False)
     private_ip = db.Column(db.String(45), nullable=False)
@@ -61,16 +59,8 @@ class Item(db.Model):
     login_name = db.Column(db.String(50), nullable=False)
     login_password = db.Column(db.String(100), nullable=False)
 
-    # These fields are REMOVED entirely from the model as per your request
-    # project_name
-    # form_name
-    # description
-    # start_date
-    # expected_completion_date
-    # actual_completion_date
-    # status
-    # reason_for_delay
-
+    db_password_set_at = db.Column(db.Date, nullable=False, default=date.today) # <--- Default changed from date.today() to date.today (function reference)
+    
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow) 
 
     def __repr__(self):

@@ -1,5 +1,11 @@
-import { useState, useEffect } from "react";
-import { useLocation, Link, useNavigate } from "react-router-dom"; // Add useNavigate
+/**
+=========================================================
+* Material Dashboard 2 React - v2.2.0
+=========================================================
+*/
+
+import React, { useState, useEffect } from "react"; // <--- Add React
+import { useLocation, Link, useNavigate } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -9,7 +15,9 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import Icon from "@mui/material/Icon";
+import Badge from "@mui/material/Badge"; // <--- Add Badge
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -35,22 +43,49 @@ import {
   setTransparentNavbar,
   setMiniSidenav,
   setOpenConfigurator,
+  // setSidenavColor, // <--- This setter is for Sidenav colors, not used in this navbar
 } from "context";
 
-// Auth Context (Add this import)
+// Auth Context
 import { useAuth } from "contexts/AuthContext";
+import axios from "axios";
 
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator, darkMode } = controller;
+  const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator, darkMode } = controller; // <--- Removed sidenavColor from here, as it's not used directly here
   const [openMenu, setOpenMenu] = useState(false);
-
-  // `pathSegments` will be an array of path parts, e.g., ["dashboard", "tables"]
   const pathSegments = useLocation().pathname.split("/").filter(Boolean);
 
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
+
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+
+  const fetchPasswordReminders = async () => {
+    if (!isAuthenticated || !user || !user.user_id) return;
+    try {
+      const response = await axios.get("http://127.0.0.1:5000/api/notifications/get_reminders", {
+        headers: {
+          "X-User-ID": user.user_id,
+        },
+      });
+      setNotifications(response.data);
+      setNotificationCount(response.data.length);
+    } catch (error) {
+      console.error("Error fetching password reminders:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchPasswordReminders();
+    } else {
+      setNotificationCount(0);
+      setNotifications([]);
+    }
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     if (fixedNavbar) {
@@ -71,7 +106,9 @@ function DashboardNavbar({ absolute, light, isMini }) {
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
-  const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
+  const handleOpenMenu = (event) => {
+    setOpenMenu(event.currentTarget);
+  };
   const handleCloseMenu = () => setOpenMenu(false);
 
   const handleLogoutClick = () => {
@@ -88,13 +125,31 @@ function DashboardNavbar({ absolute, light, isMini }) {
         vertical: "bottom",
         horizontal: "left",
       }}
+      transformOrigin={{
+        vertical: "top",
+        horizontal: "left",
+      }}
       open={Boolean(openMenu)}
       onClose={handleCloseMenu}
       sx={{ mt: 2 }}
     >
-      <NotificationItem icon={<Icon>email</Icon>} title="Check new messages" />
-      <NotificationItem icon={<Icon>podcasts</Icon>} title="Manage Podcast sessions" />
-      <NotificationItem icon={<Icon>shopping_cart</Icon>} title="Payment successfully completed" />
+      {notifications.length === 0 ? (
+        <MenuItem onClick={handleCloseMenu}>No new reminders</MenuItem>
+      ) : (
+        notifications.map((notification) => (
+          <NotificationItem
+            key={notification.id + notification.type}
+            icon={<Icon>password</Icon>}
+            title={notification.message}
+            onClick={() => {
+              handleCloseMenu();
+              if (notification.item_id) {
+                navigate(`/items/edit/${notification.item_id}`);
+              }
+            }}
+          />
+        ))
+      )}
     </Menu>
   );
 
@@ -119,18 +174,15 @@ function DashboardNavbar({ absolute, light, isMini }) {
     >
       <Toolbar sx={(theme) => navbarContainer(theme)}>
         <MDBox color="inherit" mb={{ xs: 1, md: 0 }} sx={(theme) => navbarRow(theme, { isMini })}>
-          {/* --- CORRECTED BREADCRUMBS USAGE --- */}
-          {/* Breadcrumbs is now correctly designed to handle a path string */}
           <Breadcrumbs
             icon="home"
-            // title should be the last segment of the path, capitalized.
             title={
               pathSegments.length > 0
                 ? pathSegments[pathSegments.length - 1].charAt(0).toUpperCase() +
                   pathSegments[pathSegments.length - 1].slice(1)
                 : "Dashboard"
             }
-            route={useLocation().pathname} // Pass the full pathname as a string
+            route={useLocation().pathname}
             light={light}
           />
         </MDBox>
@@ -140,7 +192,22 @@ function DashboardNavbar({ absolute, light, isMini }) {
               <MDInput label="Search here" />
             </MDBox>
             <MDBox color={light ? "white" : "inherit"}>
-              {/* --- DYNAMIC SIGN IN / LOG OUT BUTTON (Based on AuthContext) --- */}
+              <Link to="/dashboard">
+                <IconButton sx={navbarIconButton} size="small" disableRipple>
+                  <Icon sx={iconsStyle}>dashboard</Icon>
+                  <MDTypography variant="button" fontWeight="medium" sx={iconsStyle}>
+                    Dashboard
+                  </MDTypography>
+                </IconButton>
+              </Link>
+              <Link to="/profile">
+                <IconButton sx={navbarIconButton} size="small" disableRipple>
+                  <Icon sx={iconsStyle}>person</Icon>
+                  <MDTypography variant="button" fontWeight="medium" sx={iconsStyle}>
+                    Profile
+                  </MDTypography>
+                </IconButton>
+              </Link>
               {isAuthenticated ? (
                 <IconButton
                   sx={navbarIconButton}
@@ -175,15 +242,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
                   {miniSidenav ? "menu_open" : "menu"}
                 </Icon>
               </IconButton>
-              <IconButton
-                size="small"
-                disableRipple
-                color="inherit"
-                sx={navbarIconButton}
-                onClick={handleConfiguratorOpen}
-              >
-                <Icon sx={iconsStyle}>settings</Icon>
-              </IconButton>
+
               <IconButton
                 size="small"
                 disableRipple
@@ -194,7 +253,9 @@ function DashboardNavbar({ absolute, light, isMini }) {
                 variant="contained"
                 onClick={handleOpenMenu}
               >
-                <Icon sx={iconsStyle}>notifications</Icon>
+                <Badge badgeContent={notificationCount} color="error" variant="dot">
+                  <Icon sx={iconsStyle}>notifications</Icon>
+                </Badge>
               </IconButton>
               {renderMenu()}
             </MDBox>

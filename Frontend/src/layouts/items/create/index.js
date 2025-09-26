@@ -9,7 +9,7 @@ import Card from "@mui/material/Card";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Icon from "@mui/material/Icon";
-import Grid from "@mui/material/Grid"; // <--- Ensure Grid is imported
+import Grid from "@mui/material/Grid";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -30,7 +30,7 @@ function CreateItem() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Existing states
+  // --- STATES FOR THE FIELDS YOU WANT TO KEEP ---
   const [customer, setCustomer] = useState("");
   const [publicIp, setPublicIp] = useState("");
   const [privateIp, setPrivateIp] = useState("");
@@ -55,7 +55,13 @@ function CreateItem() {
   const [url, setUrl] = useState("");
   const [loginName, setLoginName] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  // --- END STATES ---
+  // --- NEW FIELD STATE ---
+  const [dbPasswordSetAt, setDbPasswordSetAt] = useState(() => {
+    // <--- RESTORED this useState
+    const today = new Date();
+    today.setDate(today.getDate() - 77); // Default to 77 days ago for testing
+    return today.toISOString().slice(0, 10);
+  });
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -76,6 +82,7 @@ function CreateItem() {
   const isPositiveNumber = (num) => !isNaN(num) && parseInt(num, 10) > 0;
   const isValidPort = (port) =>
     !isNaN(port) && parseInt(port, 10) > 0 && parseInt(port, 10) <= 65535;
+  const isValidDate = (dateString) => /^\d{4}-\d{2}-\d{2}$/.test(dateString);
 
   // --- Individual Field Validation Function ---
   const validateField = (fieldName, value) => {
@@ -126,7 +133,7 @@ function CreateItem() {
         if (!value.trim()) errorMessage = "Location is required.";
         break;
       case "applications":
-        if (!value.trim()) errorMessage = "Applications is required.";
+        if (!value.trim()) errorMessage = "Applications are required.";
         break;
       case "dbName":
         if (!value.trim()) errorMessage = "DB Name is required.";
@@ -155,6 +162,9 @@ function CreateItem() {
       case "loginPassword":
         if (!value.trim()) errorMessage = "Login Password is required.";
         break;
+      case "dbPasswordSetAt":
+        if (!value) errorMessage = "DB Password Set At date is required.";
+        break;
       default:
         break;
     }
@@ -177,6 +187,9 @@ function CreateItem() {
         case "dbPort":
           if (value && !isValidPort(value))
             errorMessage = "DB Port must be a valid port number (1-65535).";
+          break;
+        case "dbPasswordSetAt":
+          if (value && !isValidDate(value)) errorMessage = "Invalid date format. Use YYYY-MM-DD.";
           break;
         default:
           break;
@@ -219,6 +232,7 @@ function CreateItem() {
       url,
       loginName,
       loginPassword,
+      dbPasswordSetAt,
     };
 
     for (const field in fieldsToValidate) {
@@ -273,6 +287,7 @@ function CreateItem() {
           url,
           login_name: loginName,
           login_password: loginPassword,
+          db_password_set_at: dbPasswordSetAt, // Include in payload
         },
         {
           headers: {
@@ -338,8 +353,6 @@ function CreateItem() {
             <Grid container spacing={3}>
               {/* --- FIRST ROW: Customer, Server Name, Public IP --- */}
               <Grid item xs={12} sm={4}>
-                {" "}
-                {/* Changed sm from 6 to 4 */}
                 <MDInput
                   type="text"
                   label="Customer *"
@@ -356,8 +369,6 @@ function CreateItem() {
                 )}
               </Grid>
               <Grid item xs={12} sm={4}>
-                {" "}
-                {/* Changed sm from 6 to 4 */}
                 <MDInput
                   type="text"
                   label="Server Name *"
@@ -374,8 +385,6 @@ function CreateItem() {
                 )}
               </Grid>
               <Grid item xs={12} sm={4}>
-                {" "}
-                {/* Changed sm from 6 to 4 */}
                 <MDInput
                   type="text"
                   label="Public IP *"
@@ -754,6 +763,25 @@ function CreateItem() {
                   </MDTypography>
                 )}
               </Grid>
+
+              {/* --- NINTH ROW: DB Password Set At (Date for DB Password Reminder) --- */}
+              <Grid item xs={12} sm={4}>
+                <MDInput
+                  type="date"
+                  label="DB Password Set At *"
+                  fullWidth
+                  value={dbPasswordSetAt}
+                  onChange={(e) => setDbPasswordSetAt(e.target.value)}
+                  onBlur={(e) => handleBlur("dbPasswordSetAt", e.target.value)}
+                  error={!!errors.dbPasswordSetAt}
+                  InputLabelProps={{ shrink: true }}
+                />
+                {errors.dbPasswordSetAt && (
+                  <MDTypography variant="caption" color="error" display="block">
+                    {errors.dbPasswordSetAt}
+                  </MDTypography>
+                )}
+              </Grid>
             </Grid>
 
             <MDBox mt={4} mb={1}>
@@ -790,6 +818,7 @@ function CreateItem() {
   );
 }
 
+// PropTypes (if CreateItem receives any props)
 CreateItem.propTypes = {
   // Add propTypes here if CreateItem is expected to receive props
 };

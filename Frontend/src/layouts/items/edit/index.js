@@ -56,7 +56,8 @@ function EditItem() {
   const [url, setUrl] = useState("");
   const [loginName, setLoginName] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  // --- END STATES ---
+  // --- NEW FIELD STATE ---
+  const [dbPasswordSetAt, setDbPasswordSetAt] = useState(""); // Default to empty, will be pre-filled
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -78,6 +79,7 @@ function EditItem() {
   const isPositiveNumber = (num) => !isNaN(num) && parseInt(num, 10) > 0;
   const isValidPort = (port) =>
     !isNaN(port) && parseInt(port, 10) > 0 && parseInt(port, 10) <= 65535;
+  const isValidDate = (dateString) => /^\d{4}-\d{2}-\d{2}$/.test(dateString);
 
   const validateField = (fieldName, value) => {
     let errorMessage = "";
@@ -156,13 +158,15 @@ function EditItem() {
       case "loginPassword":
         if (!value.trim()) errorMessage = "Login Password is required.";
         break;
+      case "dbPasswordSetAt":
+        if (!value) errorMessage = "DB Password Set At date is required.";
+        break; // NEW REQUIRED
       default:
         break;
     }
 
     // Format checks for specific fields
     if (errorMessage === "") {
-      // Only check format if not already failed required check
       switch (fieldName) {
         case "publicIp":
           if (value && !isValidIp(value)) errorMessage = "Invalid Public IP format.";
@@ -179,6 +183,9 @@ function EditItem() {
         case "dbPort":
           if (value && !isValidPort(value))
             errorMessage = "DB Port must be a valid port number (1-65535).";
+          break;
+        case "dbPasswordSetAt":
+          if (value && !isValidDate(value)) errorMessage = "Invalid date format. Use YYYY-MM-DD.";
           break;
         default:
           break;
@@ -221,6 +228,7 @@ function EditItem() {
       url,
       loginName,
       loginPassword,
+      dbPasswordSetAt,
     };
 
     for (const field in fieldsToValidate) {
@@ -248,7 +256,7 @@ function EditItem() {
         },
       });
       const itemData = response.data;
-      // Pre-fill fields
+      // Pre-fill existing fields
       setCustomer(itemData.customer || "");
       setPublicIp(itemData.public_ip || "");
       setPrivateIp(itemData.private_ip || "");
@@ -273,6 +281,7 @@ function EditItem() {
       setUrl(itemData.url || "");
       setLoginName(itemData.login_name || "");
       setLoginPassword(itemData.login_password || "");
+      setDbPasswordSetAt(itemData.db_password_set_at || ""); // <--- Pre-fill new field
     } catch (error) {
       if (error.response) {
         openSnackbar(`Error fetching item details: ${error.response.data.message}`, "error");
@@ -333,6 +342,7 @@ function EditItem() {
           url,
           login_name: loginName,
           login_password: loginPassword,
+          db_password_set_at: dbPasswordSetAt, // <--- Include in payload
         },
         {
           headers: {
@@ -417,8 +427,8 @@ function EditItem() {
 
           <MDBox component="form" role="form" onSubmit={handleUpdateItem} pt={2}>
             <Grid container spacing={3}>
-              {/* --- FIRST ROW: Customer, Server Name --- */}
-              <Grid item xs={12} sm={6}>
+              {/* --- FIRST ROW: Customer, Server Name, Public IP --- */}
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Customer *"
@@ -434,7 +444,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Server Name *"
@@ -450,9 +460,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-
-              {/* --- SECOND ROW: Public IP, Private IP --- */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Public IP *"
@@ -468,7 +476,9 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+
+              {/* --- SECOND ROW: Private IP, OS Type, Root Username --- */}
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Private IP *"
@@ -484,9 +494,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-
-              {/* --- THIRD ROW: OS Type, Root Username --- */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   select
                   label="OS Type *"
@@ -511,7 +519,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Root Username *"
@@ -528,8 +536,8 @@ function EditItem() {
                 )}
               </Grid>
 
-              {/* --- FOURTH ROW: Root Password, Server Username --- */}
-              <Grid item xs={12} sm={6}>
+              {/* --- THIRD ROW: Root Password, Server Username, Server Password --- */}
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="password"
                   label="Root Password *"
@@ -545,7 +553,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Server Username *"
@@ -561,9 +569,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-
-              {/* --- FIFTH ROW: Server Password, Core --- */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="password"
                   label="Server Password *"
@@ -579,7 +585,9 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+
+              {/* --- FOURTH ROW: Core, RAM, HDD --- */}
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="number"
                   label="Core *"
@@ -595,9 +603,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-
-              {/* --- SIXTH ROW: RAM, HDD --- */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="RAM *"
@@ -613,7 +619,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="HDD *"
@@ -630,8 +636,8 @@ function EditItem() {
                 )}
               </Grid>
 
-              {/* --- SEVENTH ROW: Ports, Location --- */}
-              <Grid item xs={12} sm={6}>
+              {/* --- FIFTH ROW: Ports, Location, Applications --- */}
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Ports *"
@@ -647,7 +653,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Location *"
@@ -663,9 +669,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-
-              {/* --- EIGHTH ROW: Applications, DB Name --- */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Applications *"
@@ -683,7 +687,9 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+
+              {/* --- SIXTH ROW: DB Name, DB Password, DB Port --- */}
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="DB Name *"
@@ -699,9 +705,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-
-              {/* --- NINTH ROW: DB Password, DB Port --- */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="password"
                   label="DB Password *"
@@ -717,7 +721,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="number"
                   label="DB Port *"
@@ -734,8 +738,8 @@ function EditItem() {
                 )}
               </Grid>
 
-              {/* --- TENTH ROW: Dump Location, Crontab Config --- */}
-              <Grid item xs={12} sm={6}>
+              {/* --- SEVENTH ROW: Dump Location, Crontab Config, Backup Location --- */}
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Dump Location *"
@@ -751,7 +755,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Crontab Config *"
@@ -769,9 +773,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-
-              {/* --- ELEVENTH ROW: Backup Location, URL --- */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Backup Location *"
@@ -787,7 +789,9 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+
+              {/* --- EIGHTH ROW: URL, Login Name, Login Password --- */}
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="url"
                   label="URL *"
@@ -803,9 +807,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-
-              {/* --- TWELFTH ROW: Login Name, Login Password --- */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="text"
                   label="Login Name *"
@@ -821,7 +823,7 @@ function EditItem() {
                   </MDTypography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <MDInput
                   type="password"
                   label="Login Password *"
@@ -834,6 +836,25 @@ function EditItem() {
                 {errors.loginPassword && (
                   <MDTypography variant="caption" color="error" display="block">
                     {errors.loginPassword}
+                  </MDTypography>
+                )}
+              </Grid>
+
+              {/* --- NINTH ROW: DB Password Set At (Date for DB Password Reminder) --- */}
+              <Grid item xs={12} sm={4}>
+                <MDInput
+                  type="date"
+                  label="DB Password Set At *"
+                  fullWidth
+                  value={dbPasswordSetAt}
+                  onChange={(e) => setDbPasswordSetAt(e.target.value)}
+                  onBlur={(e) => handleBlur("dbPasswordSetAt", e.target.value)}
+                  error={!!errors.dbPasswordSetAt}
+                  InputLabelProps={{ shrink: true }}
+                />
+                {errors.dbPasswordSetAt && (
+                  <MDTypography variant="caption" color="error" display="block">
+                    {errors.dbPasswordSetAt}
                   </MDTypography>
                 )}
               </Grid>
